@@ -6,212 +6,364 @@
 <title>Plant It — Generative Botany</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
 <script src="https://unpkg.com/roughjs@4.6.6/bundled/rough.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f7f5f0;--surface:#f0ede6;--border:#ddd8cc;
-  --text:#1a1a1a;--muted:#888070;--accent:#3a6644;
-  --header-h:48px;
+  --bg:#f5f5f5;--panel-bg:#fff;--border:#e0e0e0;
+  --text:#1a1a1a;--muted:#888;--accent:#39ff14;--header-bg:#fff;
 }
-body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-weight:300;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-
-header{
-  height:var(--header-h);flex-shrink:0;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;border-bottom:1px solid var(--border);
-  background:rgba(247,245,240,.95);backdrop-filter:blur(8px);z-index:10;
+[data-theme="dark"]{
+  --bg:#141414;--panel-bg:#1e1e1e;--border:#2a2a2a;
+  --text:#f0f0f0;--muted:#666;--accent:#39ff14;--header-bg:#0e0e0e;
 }
-.logo{font-size:15px;font-weight:500}.logo span{color:var(--accent)}
-.hbtn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:inherit;font-size:11px;padding:5px 12px;cursor:pointer;transition:all .15s;letter-spacing:.04em}
-.hbtn:hover{border-color:var(--accent);color:var(--accent)}
-
+body{background:var(--bg);color:var(--text);font-family:'Outfit','Noto Sans SC',sans-serif;font-weight:300;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{height:44px;flex-shrink:0;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--header-bg);z-index:50}
+.brand{font-size:14px;font-weight:500;letter-spacing:.02em}
+.brand span{color:var(--accent)}
+.header-spacer{flex:1}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-family:inherit;font-size:12px;cursor:pointer;margin-left:6px;transition:border-color .15s,color .15s}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+#app{flex:1;display:flex;flex-direction:row;overflow:hidden}
+#panel{width:300px;flex-shrink:0;background:var(--panel-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+#panel::-webkit-scrollbar{width:4px}
+#panel::-webkit-scrollbar-track{background:transparent}
+#panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.panel-section{padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.section-title{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.btn{background:none;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;font-family:inherit;font-size:12px;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+.btn:hover,.btn.active{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);border:none;color:#000;font-weight:500;width:100%;padding:8px 12px;border-radius:6px;font-family:inherit;font-size:13px;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+#search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;padding:7px 10px;outline:none;transition:border-color .15s;margin-bottom:8px}
+#search-input:focus{border-color:var(--accent)}
+.chip-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.chip{background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:10px;padding:3px 9px;cursor:pointer;transition:border-color .15s,color .15s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+#status-bar{font-size:11px;color:var(--muted);margin-top:6px;min-height:14px}
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.slider-label{font-size:11px;color:var(--muted);min-width:90px;flex-shrink:0}
+.slider-row input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer}
+.slider-val{font-size:11px;color:var(--text);min-width:32px;text-align:right}
+.color-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.color-label{font-size:11px;color:var(--muted);flex:1}
+input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:none}
+.bg-presets{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.bg-chip{width:22px;height:22px;border-radius:4px;border:2px solid transparent;cursor:pointer;transition:border-color .15s;flex-shrink:0}
+.bg-chip.active,.bg-chip:hover{border-color:var(--accent)}
+.toggle-row{display:flex;align-items:center;gap:8px}
+.toggle-label{font-size:11px;color:var(--muted);flex:1}
+.toggle-switch{position:relative;width:34px;height:18px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--border);border-radius:9px;cursor:pointer;transition:background .2s}
+.toggle-switch input:checked + .toggle-track{background:var(--accent)}
+.toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;pointer-events:none}
+.toggle-switch input:checked ~ .toggle-knob{transform:translateX(16px)}
+.btn-group{display:flex;gap:4px;flex-wrap:wrap}
+.btn-group .btn{flex:1;text-align:center;min-width:0;padding:5px 4px;font-size:11px}
+#export-section{padding:14px 16px;margin-top:auto;border-top:1px solid var(--border);background:var(--panel-bg);display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.caption-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;padding:7px 10px;outline:none;margin-bottom:8px;transition:border-color .15s}
+.caption-input:focus{border-color:var(--accent)}
 #canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative}
-#p5-canvas-wrap canvas{border-radius:4px;box-shadow:0 2px 24px rgba(0,0,0,.08)}
-
-#panel{
-  flex-shrink:0;border-top:1px solid var(--border);background:var(--surface);
-  padding:14px 20px 16px;display:flex;flex-direction:column;gap:10px;
+#canvas-wrap{position:relative;display:inline-block}
+#canvas-wrap canvas{display:block}
+#caption-layer{position:absolute;inset:0;pointer-events:none;z-index:20}
+.caption-item{position:absolute;cursor:move;pointer-events:all;user-select:none;white-space:pre;line-height:1.2}
+#mobile-handle{display:none}
+@media(max-width:700px){
+  #app{flex-direction:column;overflow:visible}
+  #panel{position:fixed;bottom:0;left:0;right:0;width:100%;height:72px;border-right:none;border-top:1px solid var(--border);overflow:hidden;z-index:40;transition:height .25s ease;border-radius:14px 14px 0 0;box-shadow:0 -2px 20px rgba(0,0,0,.12)}
+  #panel.expanded{height:82vh}
+  #mobile-handle{display:flex;justify-content:center;align-items:center;padding:10px 0 6px;cursor:pointer;flex-shrink:0}
+  #mobile-handle span{width:36px;height:4px;border-radius:2px;background:var(--border)}
+  #canvas-area{height:calc(100vh - 44px - 72px);align-self:stretch}
 }
-.search-row{display:flex;gap:8px}
-.sinput{flex:1;background:white;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
-.sinput:focus{border-color:var(--accent)}
-.gbtn{background:var(--accent);border:none;border-radius:8px;color:white;font-family:inherit;font-size:12px;font-weight:500;padding:9px 18px;cursor:pointer;transition:background .15s;letter-spacing:.02em}
-.gbtn:hover{background:#2d5235}.gbtn:disabled{opacity:.5;cursor:not-allowed}
-
-.examples{display:flex;gap:6px;flex-wrap:wrap}
-.exbtn{background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:10px;padding:4px 12px;cursor:pointer;transition:all .15s;letter-spacing:.03em}
-.exbtn:hover{border-color:var(--accent);color:var(--accent)}
-
-#meta-row{display:none;align-items:center;justify-content:space-between;gap:8px}
-.plant-name{font-size:13px;font-weight:400}.plant-sci{font-size:10px;color:var(--muted);font-style:italic;margin-top:1px}
-.plant-tags{display:flex;gap:4px;margin-top:3px}
-.ptag{font-size:9px;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:1px 8px;letter-spacing:.04em}
-.expbtn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:11px;padding:7px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
-.expbtn:hover{border-color:var(--accent);color:var(--accent)}
-
-#status{font-size:11px;color:var(--muted);letter-spacing:.04em;min-height:14px}
-
-.modal-bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100;align-items:center;justify-content:center}
-.modal-bd.open{display:flex}
-.modal{background:white;border-radius:12px;padding:28px;max-width:300px;width:90%;position:relative}
-.modal h3{font-size:14px;font-weight:500;margin-bottom:10px}
-.modal p{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px}
-.mclose{position:absolute;top:12px;right:14px;background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer}
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">Plant<span>It</span></div>
-  <div style="display:flex;gap:8px">
-    <button class="hbtn" id="btn-regen">↻ Redraw</button>
-    <button class="hbtn" id="btn-export">↓ PNG</button>
-    <button class="hbtn" id="btn-about">About</button>
-  </div>
+  <div class="brand">Plant<span>It</span></div>
+  <div class="header-spacer"></div>
+  <button class="btn-icon" id="btn-regen">&#8635; Redraw</button>
+  <button class="btn-icon" id="btn-dark">&#9790;</button>
 </header>
 
-<div id="canvas-area">
-  <div id="p5-canvas-wrap"></div>
-</div>
+<div id="app">
+  <div id="panel">
+    <div id="mobile-handle"><span></span></div>
 
-<div id="panel">
-  <div class="search-row">
-    <input class="sinput" id="sinput" type="text" placeholder="Plant name… bamboo, cherry, fern, lotus, pine" />
-    <button class="gbtn" id="gbtn">Generate</button>
-  </div>
-  <div class="examples">
-    <button class="exbtn" data-p="bamboo">bamboo</button>
-    <button class="exbtn" data-p="cherry blossom">cherry</button>
-    <button class="exbtn" data-p="fern">fern</button>
-    <button class="exbtn" data-p="pine">pine</button>
-    <button class="exbtn" data-p="willow">willow</button>
-    <button class="exbtn" data-p="lotus">lotus</button>
-    <button class="exbtn" data-p="cactus">cactus</button>
-    <button class="exbtn" data-p="ginkgo">ginkgo</button>
-    <button class="exbtn" data-p="moss">moss</button>
-    <button class="exbtn" data-p="sunflower">sunflower</button>
-  </div>
-  <div id="meta-row">
-    <div>
-      <div class="plant-name" id="pname"></div>
-      <div class="plant-sci" id="psci"></div>
-      <div class="plant-tags" id="ptags"></div>
+    <div class="panel-section">
+      <div class="section-title">Search</div>
+      <input type="text" id="search-input" placeholder="Plant name&#8230; bamboo, &#31481;&#23376;, cherry, &#34507;" />
+      <div class="chip-row">
+        <button class="chip" data-p="bamboo">bamboo &#31481;</button>
+        <button class="chip" data-p="cherry blossom">cherry &#27387;&#33457;</button>
+        <button class="chip" data-p="fern">fern &#34507;</button>
+        <button class="chip" data-p="pine">pine &#26494;</button>
+        <button class="chip" data-p="willow">willow &#26609;</button>
+        <button class="chip" data-p="lotus">lotus &#33731;</button>
+        <button class="chip" data-p="cactus">cactus &#20497;&#20154;&#25481;</button>
+        <button class="chip" data-p="ginkgo">ginkgo &#38134;&#26447;</button>
+        <button class="chip" data-p="sunflower">sunflower &#21521;&#26085;&#33618;</button>
+        <button class="chip" data-p="plum">plum &#26757;</button>
+      </div>
+      <button class="btn-primary" id="btn-generate">Generate</button>
+      <div id="status-bar">Search a plant to generate its portrait.</div>
     </div>
-    <button class="expbtn" id="expbtn">↓ Export</button>
-  </div>
-  <div id="status">Search a plant to generate its portrait.</div>
-</div>
 
-<div class="modal-bd" id="about-modal">
-  <div class="modal">
-    <button class="mclose" id="mclose">×</button>
-    <h3>Plant It</h3>
-    <p>Search any plant → fetch real species data from iNaturalist → generate a unique hand-drawn botanical portrait.</p>
-    <p>Every generation is different. Every plant has its own growth logic.</p>
-    <p style="margin-top:10px;color:#bbb;font-size:11px">Made with p5.js + rough.js</p>
+    <div class="panel-section">
+      <div class="section-title">Parameters</div>
+      <div class="slider-row">
+        <span class="slider-label">Branch Angle</span>
+        <input type="range" id="sl-angle" min="10" max="60" step="1" value="28" />
+        <span class="slider-val" id="val-angle">28</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Branch Length</span>
+        <input type="range" id="sl-length" min="40" max="120" step="1" value="75" />
+        <span class="slider-val" id="val-length">75</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Branch Ratio</span>
+        <input type="range" id="sl-ratio" min="0.5" max="0.9" step="0.01" value="0.70" />
+        <span class="slider-val" id="val-ratio">0.70</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Depth</span>
+        <input type="range" id="sl-depth" min="3" max="8" step="1" value="5" />
+        <span class="slider-val" id="val-depth">5</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Leaf Size</span>
+        <input type="range" id="sl-leafsize" min="1" max="20" step="1" value="7" />
+        <span class="slider-val" id="val-leafsize">7</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Roughness</span>
+        <input type="range" id="sl-roughness" min="0.5" max="3.0" step="0.1" value="1.4" />
+        <span class="slider-val" id="val-roughness">1.4</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Style</div>
+      <div class="color-row">
+        <span class="color-label">Trunk Color</span>
+        <input type="color" id="col-trunk" value="#6b4c2a" />
+      </div>
+      <div class="color-row">
+        <span class="color-label">Leaf Color</span>
+        <input type="color" id="col-leaf" value="#4a7a38" />
+      </div>
+      <div class="section-title" style="margin-top:8px">Background</div>
+      <div class="bg-presets">
+        <div class="bg-chip active" data-bg="#fdfaf4" style="background:#fdfaf4" title="Paper"></div>
+        <div class="bg-chip" data-bg="#f5f0e8" style="background:#f5f0e8" title="Cream"></div>
+        <div class="bg-chip" data-bg="#2a2e35" style="background:#2a2e35" title="Slate"></div>
+        <div class="bg-chip" data-bg="#1a1a2e" style="background:#1a1a2e" title="Ink"></div>
+        <input type="color" id="col-bg" value="#fdfaf4" title="Custom background" />
+      </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <span class="toggle-label">Dark Mode</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-dark" />
+          <div class="toggle-track"></div>
+          <div class="toggle-knob"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Frame</div>
+      <div class="btn-group" id="frame-group">
+        <button class="btn active" data-frame="none">None</button>
+        <button class="btn" data-frame="polaroid">Polaroid</button>
+        <button class="btn" data-frame="border">Border</button>
+        <button class="btn" data-frame="label">Label</button>
+      </div>
+      <div class="color-row" style="margin-top:10px">
+        <span class="color-label">Frame Color</span>
+        <input type="color" id="col-frame" value="#ffffff" />
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Caption</div>
+      <input type="text" id="caption-text" class="caption-input" placeholder="Click canvas to place caption&#8230;" />
+      <div class="slider-row">
+        <span class="slider-label">Font Size</span>
+        <input type="range" id="sl-capsize" min="8" max="48" step="1" value="14" />
+        <span class="slider-val" id="val-capsize">14</span>
+      </div>
+      <div class="color-row">
+        <span class="color-label">Caption Color</span>
+        <input type="color" id="col-caption" value="#1a1a1a" />
+      </div>
+    </div>
+
+    <div id="export-section">
+      <button class="btn" id="btn-redraw" style="width:100%">&#8635; Redraw</button>
+      <button class="btn-primary" id="btn-export">&#8595; Export PNG</button>
+    </div>
+  </div>
+
+  <div id="canvas-area">
+    <div id="canvas-wrap">
+      <div id="caption-layer"></div>
+    </div>
   </div>
 </div>
 
 <script>
-// ---- Plant profile ----
+var zhMap = {
+  '\u7af9':'bamboo','\u7af9\u5b50':'bamboo',
+  '\u6a31\u82b1':'cherry blossom','\u6a31':'cherry blossom',
+  '\u8564':'fern','\u8564\u7c7b':'fern',
+  '\u677e':'pine','\u677e\u6811':'pine',
+  '\u67f3':'willow','\u67f3\u6811':'willow',
+  '\u83b2':'lotus','\u83b2\u82b1':'lotus','\u8377\u82b1':'lotus',
+  '\u4ed9\u4eba\u638c':'cactus',
+  '\u9280\u674f':'ginkgo',
+  '\u5411\u65e5\u8475':'sunflower','\u592a\u9633\u82b1':'sunflower',
+  '\u6885':'plum','\u6885\u82b1':'plum',
+  '\u73eb\u7470':'rose','\u8549\u8587':'rose',
+  '\u6a61\u6811':'oak',
+  '\u67ab':'maple','\u67ab\u6811':'maple',
+  '\u82d4\u85d3':'moss','\u5730\u8863':'lichen',
+  '\u6866\u6811':'birch','\u67cf\u6811':'cypress',
+  '\u8335\u8389':'jasmine','\u5170\u82b1':'orchid',
+  '\u83ca\u82b1':'chrysanthemum','\u85f0\u8863\u8349':'lavender'
+};
+
+function translateZh(q) {
+  if (zhMap[q]) return zhMap[q];
+  var keys = Object.keys(zhMap);
+  for (var i = 0; i < keys.length; i++) {
+    if (q.indexOf(keys[i]) !== -1) return zhMap[keys[i]];
+  }
+  return q;
+}
+
+var currentProfile = {form:'tree',depth:5,angle:28,ratio:0.70,branches:2,trunkCol:'#6b4c2a',leafCol:'#4a7a38',leafSize:7,name:'bamboo'};
+var currentCommon = 'bamboo';
+var currentSci = '';
+var currentBg = '#fdfaf4';
+var currentFrame = 'none';
+var currentRoughness = 1.4;
+var pInst = null;
+var captions = [];
+var captionIdCounter = 0;
+var busy = false;
+
 function plantProfile(name) {
   var n = name.toLowerCase();
-  var p = {form:'tree', depth:5, angle:28, ratio:0.70, branches:2,
-    trunkCol:'#6b4c2a', leafCol:'#4a7a38', leafSize:7, name:name};
-
-  if (/bamboo|grass|reed|sedge/.test(n))
-    Object.assign(p,{form:'grass',angle:6,depth:6,ratio:0.9,trunkCol:'#5a7a2a',leafCol:'#80b840',leafSize:18});
-  else if (/fern|pterid/.test(n))
-    Object.assign(p,{form:'fern',angle:35,depth:5,ratio:0.62,trunkCol:'#3a5a20',leafCol:'#5a9030',leafSize:8});
-  else if (/moss|lichen/.test(n))
-    Object.assign(p,{form:'fern',angle:55,depth:4,ratio:0.50,trunkCol:'#4a5a20',leafCol:'#708830',leafSize:3});
-  else if (/cactus|succulent|aloe/.test(n))
-    Object.assign(p,{form:'cactus',angle:40,depth:3,ratio:0.65,trunkCol:'#4a7038',leafCol:'#60a040'});
-  else if (/cherry|sakura|plum|prunus|magnol|peach/.test(n))
-    Object.assign(p,{form:'flower',angle:42,depth:5,ratio:0.68,branches:3,trunkCol:'#7a3828',leafCol:'#f0a0b0',leafSize:5});
-  else if (/pine|fir|spruce|cedar|pinus/.test(n))
-    Object.assign(p,{form:'pine',angle:22,depth:7,ratio:0.76,trunkCol:'#4a3018',leafCol:'#2a5820',leafSize:3});
-  else if (/willow|salix/.test(n))
-    Object.assign(p,{form:'willow',angle:50,depth:5,ratio:0.76,trunkCol:'#5a4010',leafCol:'#8aaa30',leafSize:12});
-  else if (/lotus|waterlily|nymphae/.test(n))
-    Object.assign(p,{form:'flower',angle:55,depth:3,ratio:0.78,branches:5,trunkCol:'#3a6830',leafCol:'#f0c840',leafSize:14});
-  else if (/sunflower|helianthus/.test(n))
-    Object.assign(p,{form:'flower',angle:58,depth:3,ratio:0.60,branches:4,trunkCol:'#5a4010',leafCol:'#e8b820',leafSize:12});
-  else if (/ginkgo/.test(n))
-    Object.assign(p,{form:'tree',angle:24,depth:6,ratio:0.72,trunkCol:'#5a4018',leafCol:'#c8b428',leafSize:9});
-  else if (/oak|maple|beech|elm/.test(n))
-    Object.assign(p,{form:'tree',angle:34,depth:5,ratio:0.68,branches:3,trunkCol:'#6a4020',leafCol:'#589828',leafSize:8});
-
-  // slight random variation
+  var p = {form:'tree',depth:5,angle:28,ratio:0.70,branches:2,trunkCol:'#6b4c2a',leafCol:'#4a7a38',leafSize:7,name:name};
+  if (/bamboo|grass|reed|sedge/.test(n)) Object.assign(p,{form:'grass',angle:6,depth:6,ratio:0.9,trunkCol:'#5a7a2a',leafCol:'#80b840',leafSize:18});
+  else if (/fern|pterid/.test(n)) Object.assign(p,{form:'fern',angle:35,depth:5,ratio:0.62,trunkCol:'#3a5a20',leafCol:'#5a9030',leafSize:8});
+  else if (/moss|lichen/.test(n)) Object.assign(p,{form:'fern',angle:55,depth:4,ratio:0.50,trunkCol:'#4a5a20',leafCol:'#708830',leafSize:3});
+  else if (/cactus|succulent|aloe/.test(n)) Object.assign(p,{form:'cactus',angle:40,depth:3,ratio:0.65,trunkCol:'#4a7038',leafCol:'#60a040'});
+  else if (/cherry|sakura|plum|prunus|magnol|peach/.test(n)) Object.assign(p,{form:'flower',angle:42,depth:5,ratio:0.68,branches:3,trunkCol:'#7a3828',leafCol:'#f0a0b0',leafSize:5});
+  else if (/pine|fir|spruce|cedar|pinus/.test(n)) Object.assign(p,{form:'pine',angle:22,depth:7,ratio:0.76,trunkCol:'#4a3018',leafCol:'#2a5820',leafSize:3});
+  else if (/willow|salix/.test(n)) Object.assign(p,{form:'willow',angle:50,depth:5,ratio:0.76,trunkCol:'#5a4010',leafCol:'#8aaa30',leafSize:12});
+  else if (/lotus|waterlily|nymphae/.test(n)) Object.assign(p,{form:'flower',angle:55,depth:3,ratio:0.78,branches:5,trunkCol:'#3a6830',leafCol:'#f0c840',leafSize:14});
+  else if (/sunflower|helianthus/.test(n)) Object.assign(p,{form:'flower',angle:58,depth:3,ratio:0.60,branches:4,trunkCol:'#5a4010',leafCol:'#e8b820',leafSize:12});
+  else if (/ginkgo/.test(n)) Object.assign(p,{form:'tree',angle:24,depth:6,ratio:0.72,trunkCol:'#5a4018',leafCol:'#c8b428',leafSize:9});
+  else if (/oak|maple|beech|elm/.test(n)) Object.assign(p,{form:'tree',angle:34,depth:5,ratio:0.68,branches:3,trunkCol:'#6a4020',leafCol:'#589828',leafSize:8});
+  else if (/rose/.test(n)) Object.assign(p,{form:'flower',angle:42,depth:4,ratio:0.68,branches:3,trunkCol:'#7a3828',leafCol:'#f07080',leafSize:7});
+  else if (/orchid/.test(n)) Object.assign(p,{form:'flower',angle:50,depth:4,ratio:0.70,branches:3,trunkCol:'#5a3828',leafCol:'#9060c0',leafSize:8});
+  else if (/birch/.test(n)) Object.assign(p,{form:'tree',angle:30,depth:5,ratio:0.70,trunkCol:'#d8d0c0',leafCol:'#6a9838',leafSize:7});
+  else if (/cypress/.test(n)) Object.assign(p,{form:'pine',angle:15,depth:7,ratio:0.76,trunkCol:'#4a3018',leafCol:'#2a6020',leafSize:3});
   p.angle += (Math.random()-0.5)*8;
   p.ratio += (Math.random()-0.5)*0.05;
   return p;
 }
 
-// ---- p5 sketch ----
-var currentProfile = plantProfile('bamboo');
-var currentCommon = 'bamboo';
-var currentSci = '';
-var redrawFlag = false;
-var pInst = null;
+function applyProfileToSliders(prof) {
+  var angle = Math.round(Math.min(60, Math.max(10, prof.angle)));
+  var ratio = parseFloat(Math.min(0.9, Math.max(0.5, prof.ratio)).toFixed(2));
+  var depth = Math.min(8, Math.max(3, prof.depth));
+  var leafSize = Math.min(20, Math.max(1, prof.leafSize || 7));
+  document.getElementById('sl-angle').value = angle;
+  document.getElementById('val-angle').textContent = angle;
+  document.getElementById('sl-length').value = 75;
+  document.getElementById('val-length').textContent = 75;
+  document.getElementById('sl-ratio').value = ratio;
+  document.getElementById('val-ratio').textContent = ratio.toFixed(2);
+  document.getElementById('sl-depth').value = depth;
+  document.getElementById('val-depth').textContent = depth;
+  document.getElementById('sl-leafsize').value = leafSize;
+  document.getElementById('val-leafsize').textContent = leafSize;
+  document.getElementById('col-trunk').value = prof.trunkCol || '#6b4c2a';
+  document.getElementById('col-leaf').value = prof.leafCol || '#4a7a38';
+}
+
+function readSliders() {
+  currentProfile.angle = parseFloat(document.getElementById('sl-angle').value);
+  currentProfile.depth = parseInt(document.getElementById('sl-depth').value, 10);
+  currentProfile.ratio = parseFloat(document.getElementById('sl-ratio').value);
+  currentProfile.leafSize = parseInt(document.getElementById('sl-leafsize').value, 10);
+  currentProfile.trunkCol = document.getElementById('col-trunk').value;
+  currentProfile.leafCol = document.getElementById('col-leaf').value;
+  currentRoughness = parseFloat(document.getElementById('sl-roughness').value);
+}
 
 var sketch = function(s) {
   var rc = null;
-  var W, H;
+  var W = 500;
+  var H = 500;
 
   s.setup = function() {
     var area = document.getElementById('canvas-area');
-    var size = Math.min(area.clientWidth - 32, area.clientHeight - 16, 520);
-    size = Math.max(size, 280);
+    var size = Math.min(area.clientWidth - 32, area.clientHeight - 32, 520);
+    size = Math.max(size, 260);
     W = size; H = size;
     var cnv = s.createCanvas(W, H);
-    cnv.parent('p5-canvas-wrap');
+    cnv.parent('canvas-wrap');
+    var cl = document.getElementById('caption-layer');
+    document.getElementById('canvas-wrap').appendChild(cl);
     rc = rough.canvas(cnv.elt);
     s.noLoop();
-    drawScene();
+    drawScene(currentBg);
   };
 
   s.windowResized = function() {
     var area = document.getElementById('canvas-area');
-    var size = Math.min(area.clientWidth - 32, area.clientHeight - 16, 520);
-    size = Math.max(size, 280);
+    var size = Math.min(area.clientWidth - 32, area.clientHeight - 32, 520);
+    size = Math.max(size, 260);
     W = size; H = size;
     s.resizeCanvas(W, H);
     rc = rough.canvas(s.canvas);
-    drawScene();
+    drawScene(currentBg);
   };
 
-  function drawScene() {
-    // Background — warm paper
-    s.background(253, 250, 244);
+  function hexToRgb(hex) {
+    return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+  }
 
-    // Subtle grid
-    s.stroke(175, 165, 148, 30);
+  function drawScene(bgColor) {
+    bgColor = bgColor || '#fdfaf4';
+    var rgb = hexToRgb(bgColor);
+    s.background(rgb[0], rgb[1], rgb[2]);
+    s.stroke(120, 110, 95, 20);
     s.strokeWeight(0.5);
     for (var gx = 0; gx < W; gx += 32) s.line(gx, 0, gx, H);
     for (var gy = 0; gy < H; gy += 32) s.line(0, gy, W, gy);
-
-    // Ground line (rough)
     var p = currentProfile;
-    rc.line(20, H-38, W-20, H-38, {
-      stroke: 'rgba(100,80,50,0.18)', strokeWidth: 1, roughness: 1.8
-    });
-
-    // Draw plant from ground center
+    rc.line(20, H-38, W-20, H-38, {stroke:'rgba(100,80,50,0.18)',strokeWidth:1,roughness:currentRoughness});
     s.push();
     s.translate(W/2, H-38);
-    if      (p.form==='grass')  drawGrass(p);
-    else if (p.form==='fern')   drawFern(p);
-    else if (p.form==='pine')   drawPine(p);
-    else if (p.form==='willow') drawWillow(p);
-    else if (p.form==='cactus') drawCactus(p);
-    else if (p.form==='flower') drawFlower(p);
-    else                        drawTree(p, p.depth, 80, -s.HALF_PI);
+    var trunkLen = parseFloat(document.getElementById('sl-length').value) || 75;
+    if (p.form === 'grass') drawGrass(p);
+    else if (p.form === 'fern') drawFern(p);
+    else if (p.form === 'pine') drawPine(p);
+    else if (p.form === 'willow') drawWillow(p);
+    else if (p.form === 'cactus') drawCactus(p);
+    else if (p.form === 'flower') drawFlower(p);
+    else drawTree(p, p.depth, trunkLen, -s.HALF_PI);
     s.pop();
-
-    // Annotations
     s.noStroke();
     s.fill(100, 88, 68, 80);
     s.textFont('Outfit');
@@ -229,297 +381,496 @@ var sketch = function(s) {
     s.text('Plant It', W-16, H-14);
   }
 
-  // --- rough helpers ---
   function rLine(x1,y1,x2,y2,col,wt,rough2) {
-    rc.line(x1,y1,x2,y2,{stroke:col,strokeWidth:wt||1,roughness:rough2||1.4});
+    rc.line(x1,y1,x2,y2,{stroke:col,strokeWidth:wt||1,roughness:rough2!==undefined?rough2:currentRoughness});
   }
   function rEllipse(x,y,rw,rh,fill,stroke2,wt,rough2) {
-    rc.ellipse(x,y,rw*2,rh*2,{fill:fill||'transparent',stroke:stroke2||fill||'transparent',strokeWidth:wt||0.8,fillStyle:'solid',roughness:rough2||1.6,fillWeight:0.5});
+    rc.ellipse(x,y,rw*2,rh*2,{fill:fill||'transparent',stroke:stroke2||fill||'transparent',strokeWidth:wt||0.8,fillStyle:'solid',roughness:rough2!==undefined?rough2:currentRoughness,fillWeight:0.5});
   }
 
-  // --- Tree (recursive) ---
   function drawTree(p, depth, len, angle) {
-    if (depth<=0||len<3) return;
+    if (depth <= 0 || len < 3) return;
     var x2 = Math.cos(angle)*len;
     var y2 = Math.sin(angle)*len;
-    var col = depth<=2 ? p.leafCol+'99' : p.trunkCol;
+    var col = depth <= 2 ? p.leafCol+'99' : p.trunkCol;
     var wt = Math.max(0.5, depth*0.9);
-    rLine(0,0,x2,y2,col,wt,depth<=2?1.8:1.2);
+    rLine(0,0,x2,y2,col,wt,depth<=2?currentRoughness+0.4:currentRoughness);
     s.push(); s.translate(x2,y2);
-    if (depth<=2) drawLeaf(p, angle);
+    if (depth <= 2) drawLeaf(p, angle);
     var aRad = s.radians(p.angle);
-    for (var b=0;b<p.branches;b++) {
-      var ba = angle + (b-(p.branches-1)/2)*aRad + s.random(-0.1,0.1);
+    var nb = p.branches || 2;
+    for (var b = 0; b < nb; b++) {
+      var ba = angle + (b-(nb-1)/2)*aRad + s.random(-0.1,0.1);
       drawTree(p, depth-1, len*p.ratio*s.random(0.88,1.12), ba);
     }
     s.pop();
   }
 
-  // --- Leaf ---
   function drawLeaf(p, angle) {
     s.push(); s.rotate(angle + s.HALF_PI);
     var sz = p.leafSize || 6;
-    rEllipse(0, -sz*0.5, sz*0.28, sz*0.52, p.leafCol+'88', p.leafCol+'66', 0.5, 1.5);
+    rEllipse(0, -sz*0.5, sz*0.28, sz*0.52, p.leafCol+'88', p.leafCol+'66', 0.5, currentRoughness);
     s.pop();
   }
 
-  // --- Pine ---
   function drawPine(p) {
     var tiers = p.depth - 1;
     var trunkH = 28 + s.random(-5,5);
-    rLine(0,0,0,-trunkH, p.trunkCol, 3, 1.0);
+    rLine(0,0,0,-trunkH, p.trunkCol, 3, currentRoughness*0.7);
     s.push(); s.translate(0,-trunkH);
-    for (var t=0;t<tiers;t++) {
+    for (var t = 0; t < tiers; t++) {
       var frac = t/tiers;
       var tw = (70*(1-frac*0.65)) * (1+s.random(-0.06,0.06));
       var th = 22+frac*8;
       var yo = -th*0.45*t;
       rc.polygon([
         [0, yo-th], [tw/2+s.random(-3,3), yo], [-tw/2+s.random(-3,3), yo]
-      ], {fill:p.leafCol+'55', stroke:p.leafCol, strokeWidth:0.7,
-          fillStyle:'hachure', hachureAngle:55, hachureGap:4, roughness:1.8});
+      ], {fill:p.leafCol+'55',stroke:p.leafCol,strokeWidth:0.7,fillStyle:'hachure',hachureAngle:55,hachureGap:4,roughness:currentRoughness});
     }
     s.pop();
   }
 
-  // --- Fern ---
   function drawFern(p) {
     function frond(depth, len, angle) {
-      if(depth<=0||len<2) return;
-      var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
-      rLine(0,0,x2,y2, depth<=1?p.leafCol:p.trunkCol, Math.max(0.4,depth*0.45), 1.6);
+      if (depth <= 0 || len < 2) return;
+      var x2 = Math.cos(angle)*len;
+      var y2 = Math.sin(angle)*len;
+      rLine(0,0,x2,y2, depth<=1?p.leafCol:p.trunkCol, Math.max(0.4,depth*0.45), currentRoughness);
       s.push(); s.translate(x2,y2);
       frond(depth-1, len*0.88, angle+s.random(-0.06,0.06));
       var pa = s.radians(p.angle);
-      if(depth>1){
+      if (depth > 1) {
         frond(depth-2, len*0.42, angle+pa);
         frond(depth-2, len*0.42, angle-pa);
       } else {
-        drawLeaf(p, angle+pa); drawLeaf(p, angle-pa);
+        drawLeaf(p, angle+pa);
+        drawLeaf(p, angle-pa);
       }
       s.pop();
     }
-    for(var i=0;i<3;i++){
+    for (var i = 0; i < 3; i++) {
       s.push(); s.rotate((i-1)*0.20);
       frond(p.depth, 88+i*10, -s.HALF_PI);
       s.pop();
     }
   }
 
-  // --- Grass/Bamboo ---
   function drawGrass(p) {
     var nS = 5 + Math.floor(s.random(0,5));
-    for(var i=0;i<nS;i++){
+    for (var i = 0; i < nS; i++) {
       var sx = (i-(nS-1)/2)*20 + s.random(-5,5);
       s.push(); s.translate(sx,0);
       var sh = 60+s.random(0,65);
       var nodes = 3+Math.floor(s.random(0,3));
       var cx2 = s.random(-16,16);
-      // Stem as rough bezier segments
-      for(var seg=0;seg<nodes;seg++){
-        var t0=seg/nodes, t1=(seg+1)/nodes;
-        var y0=-sh*t0, y1=-sh*t1;
-        var nx0=cx2*(2*t0*(1-t0))+(cx2*0.4)*t0*t0;
-        var nx1=cx2*(2*t1*(1-t1))+(cx2*0.4)*t1*t1;
-        rLine(nx0,y0,nx1,y1, p.trunkCol, 1.4+s.random(0,0.4), 0.8);
-        // Node ring
+      for (var seg = 0; seg < nodes; seg++) {
+        var t0 = seg/nodes;
+        var t1 = (seg+1)/nodes;
+        var y0 = -sh*t0;
+        var y1 = -sh*t1;
+        var nx0 = cx2*(2*t0*(1-t0))+(cx2*0.4)*t0*t0;
+        var nx1 = cx2*(2*t1*(1-t1))+(cx2*0.4)*t1*t1;
+        rLine(nx0,y0,nx1,y1, p.trunkCol, 1.4+s.random(0,0.4), currentRoughness*0.6);
         rc.ellipse(nx1,y1,4,2.5,{stroke:p.trunkCol,strokeWidth:1,roughness:0.8,fill:'none'});
-        // Leaf at node
         s.push(); s.translate(nx1,y1);
         var ld = seg%2===0?1:-1;
         s.rotate(-s.HALF_PI + ld*0.42);
         var lsz = p.leafSize;
-        rEllipse(0,-lsz*0.5,lsz*0.22,lsz*0.5,p.leafCol+'77',p.leafCol+'55',0.5,1.6);
+        rEllipse(0,-lsz*0.5,lsz*0.22,lsz*0.5,p.leafCol+'77',p.leafCol+'55',0.5,currentRoughness);
         s.pop();
       }
       s.pop();
     }
   }
 
-  // --- Willow ---
   function drawWillow(p) {
     var th = 75+s.random(-10,10);
-    rLine(0,0,0,-th, p.trunkCol, 4, 1.0);
+    rLine(0,0,0,-th, p.trunkCol, 4, currentRoughness*0.7);
     s.push(); s.translate(0,-th);
     var nb = 6+Math.floor(s.random(0,5));
-    for(var b=0;b<nb;b++){
+    for (var b = 0; b < nb; b++) {
       var ba = s.random(-0.7,0.7);
       var bl = 28+s.random(0,28);
       var bx = Math.cos(-s.HALF_PI+ba)*bl;
       var by = Math.sin(-s.HALF_PI+ba)*bl;
-      rLine(0,0,bx,by, p.trunkCol, 1.2, 1.0);
-      // Drooping strands from branch end
+      rLine(0,0,bx,by, p.trunkCol, 1.2, currentRoughness*0.7);
       s.push(); s.translate(bx,by);
       var ns = 2+Math.floor(s.random(0,4));
-      for(var st=0;st<ns;st++){
+      for (var st = 0; st < ns; st++) {
         var sx2 = s.random(-10,10);
         var dl = 20+s.random(0,30);
-        // Hand-draw drooping strand as 3-point polyline
         rc.linearPath([
-          [sx2,0],
-          [sx2+s.random(-8,8),dl*0.5],
-          [sx2+s.random(-6,6),dl]
-        ], {stroke:p.leafCol+'aa',strokeWidth:0.7,roughness:2.0});
+          [sx2,0],[sx2+s.random(-8,8),dl*0.5],[sx2+s.random(-6,6),dl]
+        ], {stroke:p.leafCol+'aa',strokeWidth:0.7,roughness:currentRoughness*1.4});
       }
       s.pop();
     }
     s.pop();
   }
 
-  // --- Cactus ---
   function drawCactus(p) {
     function arm(h, w, depth2) {
-      if(depth2<=0) return;
-      // Body
-      rc.rectangle(-w/2,-h,w,h,{
-        fill:p.leafCol+'55',stroke:p.trunkCol,strokeWidth:0.8,
-        fillStyle:'solid',roughness:1.4
-      });
-      // Spine lines
-      for(var sp=0;sp<4;sp++){
+      if (depth2 <= 0) return;
+      rc.rectangle(-w/2,-h,w,h,{fill:p.leafCol+'55',stroke:p.trunkCol,strokeWidth:0.8,fillStyle:'solid',roughness:currentRoughness});
+      for (var sp = 0; sp < 4; sp++) {
         var sy = -h*(0.15+sp*0.22);
         rLine(-w/2,sy,-w/2-5,sy-3,p.trunkCol+'88',0.5,0.8);
         rLine(w/2,sy,w/2+5,sy-3,p.trunkCol+'88',0.5,0.8);
       }
-      if(depth2>1&&s.random()>.45){
-        s.push();s.translate(-w/2,-h*0.55);s.rotate(-s.HALF_PI);arm(h*0.58,w*0.72,depth2-1);s.pop();
+      if (depth2 > 1 && s.random() > 0.45) {
+        s.push(); s.translate(-w/2,-h*0.55); s.rotate(-s.HALF_PI); arm(h*0.58,w*0.72,depth2-1); s.pop();
       }
-      if(depth2>1&&s.random()>.45){
-        s.push();s.translate(w/2,-h*0.55);s.rotate(s.HALF_PI);arm(h*0.58,w*0.72,depth2-1);s.pop();
+      if (depth2 > 1 && s.random() > 0.45) {
+        s.push(); s.translate(w/2,-h*0.55); s.rotate(s.HALF_PI); arm(h*0.58,w*0.72,depth2-1); s.pop();
       }
     }
     arm(85,20,p.depth);
   }
 
-  // --- Flower ---
   function drawFlower(p) {
-    function branch(depth2,len,angle) {
-      if(depth2<=0||len<5) return;
-      var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
-      rLine(0,0,x2,y2, p.trunkCol, Math.max(0.5,depth2*0.65), 1.2);
+    function branch(depth2, len, angle) {
+      if (depth2 <= 0 || len < 5) return;
+      var x2 = Math.cos(angle)*len;
+      var y2 = Math.sin(angle)*len;
+      rLine(0,0,x2,y2, p.trunkCol, Math.max(0.5,depth2*0.65), currentRoughness);
       s.push(); s.translate(x2,y2);
-      if(depth2===1){
-        // Petals
+      if (depth2 === 1) {
         var petals = 5+Math.floor(s.random(0,4));
-        for(var pe=0;pe<petals;pe++){
+        for (var pe = 0; pe < petals; pe++) {
           var pa2 = (pe/petals)*s.TWO_PI;
           var psz = p.leafSize;
           s.push(); s.rotate(pa2);
-          rEllipse(0,-psz,psz*0.35,psz, p.leafCol+'88', p.leafCol+'66', 0.6, 1.8);
+          rEllipse(0,-psz,psz*0.35,psz, p.leafCol+'88', p.leafCol+'66', 0.6, currentRoughness);
           s.pop();
         }
-        // Center
-        rEllipse(0,0,p.leafSize*0.4,p.leafSize*0.4,'#f8e040aa','#e8c030',0.8,1.2);
+        rEllipse(0,0,p.leafSize*0.4,p.leafSize*0.4,'#f8e040aa','#e8c030',0.8,currentRoughness*0.8);
       } else {
-        var aRad=s.radians(p.angle);
-        for(var b=0;b<p.branches;b++){
-          var ba=angle+(b-(p.branches-1)/2)*aRad+s.random(-0.1,0.1);
-          branch(depth2-1,len*p.ratio*s.random(0.85,1.12),ba);
+        var aRad = s.radians(p.angle);
+        var nb2 = p.branches || 2;
+        for (var b = 0; b < nb2; b++) {
+          var ba = angle + (b-(nb2-1)/2)*aRad + s.random(-0.1,0.1);
+          branch(depth2-1, len*p.ratio*s.random(0.85,1.12), ba);
         }
       }
       s.pop();
     }
-    branch(p.depth,72,-s.HALF_PI);
+    var trunkLen = parseFloat(document.getElementById('sl-length').value) || 72;
+    branch(p.depth, trunkLen, -s.HALF_PI);
   }
 
-  s.redrawPlant = function(prof, common, sci) {
+  s.redrawPlant = function(prof, common, sci, bgColor) {
     currentProfile = prof;
-    currentCommon = common;
-    currentSci = sci;
-    drawScene();
+    currentCommon = common || '';
+    currentSci = sci || '';
+    if (bgColor) currentBg = bgColor;
+    drawScene(currentBg);
   };
 };
 
 pInst = new p5(sketch);
 
-// ---- iNaturalist API ----
+
+// iNaturalist API
 function fetchPlant(name, cb) {
   var url = 'https://api.inaturalist.org/v1/taxa'
     + '?q=' + encodeURIComponent(name)
     + '&taxon_id=47126&rank=species,genus,family&per_page=3&order_by=observations_count';
   fetch(url)
-    .then(function(r){return r.json();})
-    .then(function(d){
-      cb(null, d.results&&d.results.length>0 ? d.results[0] : null);
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      cb(null, d.results && d.results.length > 0 ? d.results[0] : null);
     })
-    .catch(function(){ cb(null,null); });
+    .catch(function() { cb(null, null); });
 }
 
-// ---- Generate ----
-var busy = false;
 function generate(name) {
-  if(busy) return;
-  busy=true;
-  document.getElementById('gbtn').disabled=true;
-  document.getElementById('status').textContent='Generating…';
-
-  var prof = plantProfile(name);
-  // Draw immediately with local profile
-  pInst.redrawPlant(prof, name, '');
-  document.getElementById('pname').textContent=name;
-  document.getElementById('psci').textContent='';
-  document.getElementById('ptags').innerHTML='';
-  document.getElementById('meta-row').style.display='flex';
-  document.getElementById('status').textContent='';
-
-  // Then enrich with API in background
-  fetchPlant(name, function(err, taxon) {
-    busy=false;
-    document.getElementById('gbtn').disabled=false;
-    if(taxon) {
-      var common = taxon.preferred_common_name || taxon.name || name;
-      var sci = taxon.name||'';
-      document.getElementById('pname').textContent=common;
-      document.getElementById('psci').textContent=sci;
-      var tagsEl=document.getElementById('ptags');
-      tagsEl.innerHTML='';
-      [taxon.iconic_taxon_name, taxon.rank].filter(Boolean).forEach(function(t){
-        var sp=document.createElement('span');sp.className='ptag';sp.textContent=t;tagsEl.appendChild(sp);
-      });
-      // Re-draw with updated labels
-      pInst.redrawPlant(prof, common, sci);
+  if (busy) return;
+  var q = translateZh(name.trim());
+  busy = true;
+  document.getElementById('btn-generate').disabled = true;
+  document.getElementById('status-bar').textContent = 'Generating\u2026';
+  var prof = plantProfile(q);
+  applyProfileToSliders(prof);
+  Object.assign(currentProfile, prof);
+  currentCommon = q;
+  currentSci = '';
+  pInst.redrawPlant(currentProfile, q, '', currentBg);
+  document.getElementById('status-bar').textContent = 'Fetching species data\u2026';
+  fetchPlant(q, function(err, taxon) {
+    busy = false;
+    document.getElementById('btn-generate').disabled = false;
+    if (taxon) {
+      var common = taxon.preferred_common_name || taxon.name || q;
+      var sci = taxon.name || '';
+      currentCommon = common;
+      currentSci = sci;
+      pInst.redrawPlant(currentProfile, common, sci, currentBg);
+      document.getElementById('status-bar').textContent = sci ? sci : '';
+    } else {
+      document.getElementById('status-bar').textContent = '';
     }
   });
 }
 
-// ---- UI ----
-document.getElementById('gbtn').addEventListener('click',function(){
-  var v=document.getElementById('sinput').value.trim();if(v)generate(v);
+// Caption system
+function addCaption(x, y) {
+  var text = document.getElementById('caption-text').value;
+  if (!text) return;
+  var size = parseInt(document.getElementById('sl-capsize').value, 10);
+  var color = document.getElementById('col-caption').value;
+  var id = 'cap-' + (++captionIdCounter);
+  var el = document.createElement('div');
+  el.className = 'caption-item';
+  el.id = id;
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.fontSize = size + 'px';
+  el.style.color = color;
+  el.style.fontFamily = "'Outfit','Noto Sans SC',sans-serif";
+  var layer = document.getElementById('caption-layer');
+  layer.appendChild(el);
+  captions.push({id:id, x:x, y:y, text:text, size:size, color:color});
+  makeDraggable(el);
+}
+
+function makeDraggable(el) {
+  var startX, startY, startLeft, startTop;
+  function onDown(e) {
+    e.preventDefault();
+    var touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startLeft = parseInt(el.style.left, 10) || 0;
+    startTop = parseInt(el.style.top, 10) || 0;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    var touch = e.touches ? e.touches[0] : e;
+    el.style.left = (startLeft + touch.clientX - startX) + 'px';
+    el.style.top = (startTop + touch.clientY - startY) + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchend', onUp);
+  }
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, {passive:false});
+}
+
+// bakeFrame: returns a new canvas with frame applied
+function bakeFrame(sourceCanvas, common, sci, frameStyle, frameColor) {
+  var oc = document.createElement('canvas');
+  var W = sourceCanvas.width;
+  var H = sourceCanvas.height;
+  if (frameStyle === 'polaroid') {
+    oc.width = W + 40;
+    oc.height = H + 80;
+    var ctx = oc.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, oc.width, oc.height);
+    ctx.drawImage(sourceCanvas, 20, 20);
+  } else if (frameStyle === 'border') {
+    oc.width = W;
+    oc.height = H;
+    var ctx = oc.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+    ctx.strokeStyle = frameColor || '#000000';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, W-6, H-6);
+  } else if (frameStyle === 'label') {
+    oc.width = W;
+    oc.height = H + 40;
+    var ctx = oc.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+    ctx.fillStyle = frameColor || '#2a2e35';
+    ctx.fillRect(0, H, W, 40);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '13px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText((common || '') + (sci ? '  ' + sci : ''), W/2, H+26);
+  } else {
+    oc.width = W;
+    oc.height = H;
+    var ctx = oc.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+  }
+  return oc;
+}
+
+function doExport() {
+  var srcCanvas = document.querySelector('#canvas-wrap canvas');
+  if (!srcCanvas) return;
+  var frameColor = document.getElementById('col-frame').value;
+  var framed = bakeFrame(srcCanvas, currentCommon, currentSci, currentFrame, frameColor);
+  // Bake captions onto framed canvas
+  var final = document.createElement('canvas');
+  final.width = framed.width;
+  final.height = framed.height;
+  var ctx = final.getContext('2d');
+  ctx.drawImage(framed, 0, 0);
+  var layer = document.getElementById('caption-layer');
+  var layerRect = layer.getBoundingClientRect();
+  var wrapRect = document.getElementById('canvas-wrap').getBoundingClientRect();
+  var items = layer.querySelectorAll('.caption-item');
+  items.forEach(function(el) {
+    var left = parseInt(el.style.left, 10) || 0;
+    var top = parseInt(el.style.top, 10) || 0;
+    ctx.font = el.style.fontSize + ' ' + (el.style.fontFamily || 'Outfit, sans-serif');
+    ctx.fillStyle = el.style.color || '#1a1a1a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(el.textContent, left, top);
+  });
+  var a = document.createElement('a');
+  a.href = final.toDataURL('image/png');
+  a.download = 'plantit-' + (currentCommon || 'plant').replace(/\s+/g,'-') + '.png';
+  a.click();
+}
+
+// Slider live updates
+function bindSlider(id, valId, cb) {
+  var sl = document.getElementById(id);
+  var vl = document.getElementById(valId);
+  sl.addEventListener('input', function() {
+    var v = parseFloat(sl.value);
+    vl.textContent = id === 'sl-ratio' ? v.toFixed(2) : v;
+    if (cb) cb(v);
+  });
+}
+
+bindSlider('sl-angle', 'val-angle', function() { readSliders(); if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg); });
+bindSlider('sl-length', 'val-length', function() { readSliders(); if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg); });
+bindSlider('sl-ratio', 'val-ratio', function() { readSliders(); if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg); });
+bindSlider('sl-depth', 'val-depth', function() { readSliders(); if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg); });
+bindSlider('sl-leafsize', 'val-leafsize', function() { readSliders(); if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg); });
+bindSlider('sl-roughness', 'val-roughness', function() { readSliders(); if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg); });
+bindSlider('sl-capsize', 'val-capsize', null);
+
+document.getElementById('col-trunk').addEventListener('input', function() {
+  currentProfile.trunkCol = this.value;
+  if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg);
 });
-document.getElementById('sinput').addEventListener('keydown',function(e){
-  if(e.key==='Enter'){var v=this.value.trim();if(v)generate(v);}
+document.getElementById('col-leaf').addEventListener('input', function() {
+  currentProfile.leafCol = this.value;
+  if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg);
 });
-document.querySelectorAll('.exbtn').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    document.getElementById('sinput').value=this.dataset.p;
+document.getElementById('col-bg').addEventListener('input', function() {
+  currentBg = this.value;
+  document.querySelectorAll('.bg-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg);
+});
+
+// Background presets
+document.querySelectorAll('.bg-chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.bg-chip').forEach(function(c) { c.classList.remove('active'); });
+    this.classList.add('active');
+    currentBg = this.dataset.bg;
+    document.getElementById('col-bg').value = currentBg;
+    if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg);
+  });
+});
+
+// Dark mode toggle
+document.getElementById('toggle-dark').addEventListener('change', function() {
+  document.documentElement.setAttribute('data-theme', this.checked ? 'dark' : '');
+});
+document.getElementById('btn-dark').addEventListener('click', function() {
+  var td = document.getElementById('toggle-dark');
+  td.checked = !td.checked;
+  document.documentElement.setAttribute('data-theme', td.checked ? 'dark' : '');
+});
+
+// Frame buttons
+document.querySelectorAll('#frame-group .btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#frame-group .btn').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+    currentFrame = this.dataset.frame;
+  });
+});
+
+// Generate button
+document.getElementById('btn-generate').addEventListener('click', function() {
+  var v = document.getElementById('search-input').value.trim();
+  if (v) generate(v);
+});
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { var v = this.value.trim(); if (v) generate(v); }
+});
+
+// Chips
+document.querySelectorAll('.chip').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.getElementById('search-input').value = this.dataset.p;
     generate(this.dataset.p);
   });
 });
-document.getElementById('btn-regen').addEventListener('click',function(){
-  var v=document.getElementById('sinput').value.trim()||'bamboo';generate(v);
+
+// Redraw
+document.getElementById('btn-regen').addEventListener('click', function() {
+  var v = document.getElementById('search-input').value.trim() || currentCommon || 'bamboo';
+  generate(v);
 });
-function doExport(){
-  var cnv=document.querySelector('#p5-canvas-wrap canvas');
-  if(!cnv)return;
-  var a=document.createElement('a');a.href=cnv.toDataURL('image/png');
-  a.download='plantit.png';a.click();
-}
-document.getElementById('btn-export').addEventListener('click',doExport);
-document.getElementById('expbtn').addEventListener('click',doExport);
-document.getElementById('btn-about').addEventListener('click',function(){
-  document.getElementById('about-modal').classList.add('open');
+document.getElementById('btn-redraw').addEventListener('click', function() {
+  var v = document.getElementById('search-input').value.trim() || currentCommon || 'bamboo';
+  generate(v);
 });
-document.getElementById('mclose').addEventListener('click',function(){
-  document.getElementById('about-modal').classList.remove('open');
+
+// Export
+document.getElementById('btn-export').addEventListener('click', doExport);
+
+// Click canvas to place caption
+document.getElementById('canvas-wrap').addEventListener('click', function(e) {
+  if (e.target.classList.contains('caption-item')) return;
+  var rect = this.getBoundingClientRect();
+  var x = e.clientX - rect.left;
+  var y = e.clientY - rect.top;
+  addCaption(x, y);
 });
-document.getElementById('about-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+// Mobile drawer
+var mobileHandle = document.getElementById('mobile-handle');
+var panel = document.getElementById('panel');
+mobileHandle.addEventListener('click', function() {
+  panel.classList.toggle('expanded');
+});
+
+var touchStartY = 0;
+var panelHeight = 0;
+mobileHandle.addEventListener('touchstart', function(e) {
+  touchStartY = e.touches[0].clientY;
+  panelHeight = panel.offsetHeight;
+}, {passive:true});
+mobileHandle.addEventListener('touchmove', function(e) {
+  var dy = touchStartY - e.touches[0].clientY;
+  var newH = Math.min(window.innerHeight * 0.82, Math.max(72, panelHeight + dy));
+  panel.style.height = newH + 'px';
+  e.preventDefault();
+}, {passive:false});
+mobileHandle.addEventListener('touchend', function() {
+  var h = panel.offsetHeight;
+  if (h > window.innerHeight * 0.4) {
+    panel.classList.add('expanded');
+    panel.style.height = '';
+  } else {
+    panel.classList.remove('expanded');
+    panel.style.height = '';
+  }
+});
 
 // Initial draw
-var starters=['bamboo','cherry blossom','fern','pine','willow','lotus','ginkgo','sunflower'];
-var s0=starters[Math.floor(Math.random()*starters.length)];
-document.getElementById('sinput').value=s0;
-// Wait for p5 setup then draw
-setTimeout(function(){generate(s0);},200);
+var starters = ['bamboo','cherry blossom','fern','pine','willow','lotus','ginkgo','sunflower'];
+var s0 = starters[Math.floor(Math.random()*starters.length)];
+document.getElementById('search-input').value = s0;
+setTimeout(function() { generate(s0); }, 200);
 </script>
 </body>
 </html>
