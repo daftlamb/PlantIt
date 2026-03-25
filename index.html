@@ -248,8 +248,7 @@ function plantProfile(taxon) {
     p.trunkColor='#4a7038'; p.leafColor='#5a9040'; p.leafSize=0;
   } else if (/cherry|sakura|plum|prunus|magnol|peach/.test(combined)) {
     p.form='flower'; p.angle=40; p.depth=5; p.ratio=0.68; p.branches=3;
-    p.trunkColor='#6a3020'; p.leafColor:'#f0a0b8'; p.leafSize=5;
-    p.leafColor='#f0a0b8';
+    p.trunkColor='#6a3020'; p.leafColor='#f0a0b8'; p.leafSize=5;
   } else if (/pine|fir|spruce|cedar|picea|abies|pinus|conifer/.test(combined)) {
     p.form='pine'; p.angle=20; p.depth=7; p.ratio=0.78; p.branches=2;
     p.trunkColor='#3a2a10'; p.leafColor='#2a5020'; p.leafSize=3;
@@ -450,7 +449,7 @@ function drawCactus(p) {
     ctx.fillStyle=p.trunkColor;
     ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=0.5;
     ctx.beginPath();
-    ctx.roundRect(-w/2,-(h),w,h,w/3);
+    var rr=w/3;ctx.moveTo(-w/2+rr,-h);ctx.lineTo(w/2-rr,-h);ctx.quadraticCurveTo(w/2,-h,w/2,-h+rr);ctx.lineTo(w/2,0);ctx.lineTo(-w/2,0);ctx.lineTo(-w/2,-h+rr);ctx.quadraticCurveTo(-w/2,-h,-w/2+rr,-h);ctx.closePath();
     ctx.fill();ctx.stroke();
     // Spines
     for(var s=0;s<4;s++){
@@ -584,9 +583,22 @@ document.getElementById('about-modal').addEventListener('click', function(e){
   if(e.target===this) this.classList.remove('open');
 });
 
-// Auto-generate on load
-var starters=['bamboo','cherry blossom','fern','pine','lotus','ginkgo'];
-generate(starters[Math.floor(Math.random()*starters.length)]);
+// Auto-generate on load — skip API, draw directly from name heuristic
+var starters=['bamboo','cherry blossom','fern','pine','lotus','ginkgo','cactus','willow'];
+var startName = starters[Math.floor(Math.random()*starters.length)];
+document.getElementById('search-input').value = startName;
+// Use local profile immediately (no API call on first load)
+(function(){
+  var fakeTaxon = {name: startName, preferred_common_name: startName, rank:'species', iconic_taxon_name:'Plantae'};
+  var p = plantProfile(fakeTaxon);
+  drawPlant(p, startName, '');
+  document.getElementById('canvas-hint').style.display='none';
+  document.getElementById('plant-common').textContent = startName;
+  document.getElementById('plant-sci').textContent = '';
+  document.getElementById('plant-tags').innerHTML = '';
+  document.getElementById('plant-meta').style.display='flex';
+  document.getElementById('status').textContent = 'Click Generate to fetch real species data';
+})();
 </script>
 </body>
 </html>
