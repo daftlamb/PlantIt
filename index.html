@@ -556,181 +556,411 @@ var sketch = function(s) {
     rc.ellipse(x,y,rw*2,rh*2,{fill:fill||'transparent',stroke:stroke2||fill||'transparent',strokeWidth:wt||0.8,fillStyle:'solid',roughness:rough2!==undefined?rough2:currentRoughness,fillWeight:0.5});
   }
 
+  // Draw a quadratic bezier branch using plantCtx
+  function drawBezierBranch(x1, y1, x2, y2, cpOffX, cpOffY, col, wt) {
+    var cpx = (x1+x2)*0.5 + cpOffX;
+    var cpy = (y1+y2)*0.5 + cpOffY;
+    plantCtx.save();
+    plantCtx.strokeStyle = col || '#333';
+    plantCtx.lineWidth = wt || 1;
+    plantCtx.lineCap = 'round';
+    plantCtx.beginPath();
+    plantCtx.moveTo(x1, y1);
+    plantCtx.quadraticCurveTo(cpx, cpy, x2, y2);
+    plantCtx.stroke();
+    plantCtx.restore();
+  }
+
+  // Draw a leaf ellipse at current plantCtx origin, rotated to face angle
+  function drawLeaf(p, angle) {
+    var sz = p.leafSize || 6;
+    plantCtx.save();
+    plantCtx.rotate(angle + s.HALF_PI);
+    rEllipse(0, -sz*0.5, sz*0.28, sz*0.52, p.leafCol+'88', p.leafCol+'66', 0.5, currentRoughness);
+    plantCtx.restore();
+  }
+
+  // Recursive branching tree using native Canvas 2D transforms
   function drawTree(p, depth, len, angle) {
     if (depth <= 0 || len < 3) return;
     var windOff = calcWindOffset(depth);
-    var x2 = Math.cos(angle)*len + windOff;
-    var y2 = Math.sin(angle)*len;
-    var col = depth <= 2 ? p.leafCol+'99' : p.trunkCol;
-    var wt = Math.max(0.5, depth*0.9);
-    rLine(0,0,x2,y2,col,wt,depth<=2?currentRoughness+0.4:currentRoughness);
-    s.push(); s.translate(x2,y2);
-    if (depth <= 2) drawLeaf(p, angle);
+    var ex = Math.cos(angle)*len + windOff;
+    var ey = Math.sin(angle)*len;
+    var col = depth <= 2 ? p.leafCol+'bb' : p.trunkCol;
+    var wt = Math.max(0.5, depth * 1.1);
+    // Quadratic bezier: control point perpendicular to branch direction
+    var perpX = -Math.sin(angle) * len * 0.12 * (s.random(0,1)>0.5?1:-1);
+    var perpY =  Math.cos(angle) * len * 0.12 * (s.random(0,1)>0.5?1:-1);
+    drawBezierBranch(0, 0, ex, ey, perpX, perpY, col, wt);
+    plantCtx.save();
+    plantCtx.translate(ex, ey);
+    if (depth <= 2) {
+      // Draw leaf cluster at tip
+      var leafCount = 2 + Math.floor(s.random(0,3));
+      for (var li = 0; li < leafCount; li++) {
+        drawLeaf(p, angle + s.random(-0.5, 0.5));
+      }
+    }
     var aRad = s.radians(p.angle);
     var nb = p.branches || 2;
     for (var b = 0; b < nb; b++) {
-      var ba = angle + (b-(nb-1)/2)*aRad + s.random(-0.1,0.1);
-      drawTree(p, depth-1, len*p.ratio*s.random(0.88,1.12), ba);
+      var ba = angle + (b - (nb-1)/2) * aRad + s.random(-0.12, 0.12);
+      drawTree(p, depth-1, len * p.ratio * s.random(0.88, 1.12), ba);
     }
-    s.pop();
+    plantCtx.restore();
   }
 
-  function drawLeaf(p, angle) {
-    s.push(); s.rotate(angle + s.HALF_PI);
-    var sz = p.leafSize || 6;
-    rEllipse(0, -sz*0.5, sz*0.28, sz*0.52, p.leafCol+'88', p.leafCol+'66', 0.5, currentRoughness);
-    s.pop();
-  }
-
+  // Pine conifer: tall narrow silhouette with tiered branches and needle clusters
   function drawPine(p) {
     var tiers = p.depth - 1;
-    var trunkH = 28 + s.random(-5,5);
-    rLine(0,0,0,-trunkH, p.trunkCol, 3, currentRoughness*0.7);
-    s.push(); s.translate(0,-trunkH);
+    var trunkH = 30 + s.random(-5, 5);
+    var totalH = 160 + s.random(-20, 20);
+    // Draw trunk
+    rLine(0, 0, 0, -trunkH - totalH * 0.15, p.trunkCol, 3);
+    plantCtx.save();
+    plantCtx.translate(0, -trunkH);
     for (var t = 0; t < tiers; t++) {
-      var frac = t/tiers;
-      var tw = (70*(1-frac*0.65)) * (1+s.random(-0.06,0.06));
-      var th = 22+frac*8;
-      var yo = -th*0.45*t;
+      var frac = t / tiers;
+      var tierY = -(totalH * frac);
+      var tierW = (72 * (1 - frac * 0.72)) * (1 + s.random(-0.05, 0.05));
+      var tierH = 24 + frac * 6;
       var windOff = calcWindOffset(Math.max(1, tiers - t));
-      rc.polygon([
-        [windOff, yo-th], [tw/2+s.random(-3,3)+windOff, yo], [-tw/2+s.random(-3,3)+windOff, yo]
-      ], {fill:p.leafCol+'55',stroke:p.leafCol,strokeWidth:0.7,fillStyle:'hachure',hachureAngle:55,hachureGap:4,roughness:currentRoughness});
+      // Draw tier triangle using Canvas 2D path
+      plantCtx.save();
+      plantCtx.translate(windOff, 0);
+      plantCtx.strokeStyle = p.leafCol;
+      plantCtx.lineWidth = 0.8;
+      plantCtx.fillStyle = p.leafCol + '44';
+      plantCtx.beginPath();
+      plantCtx.moveTo(0, tierY - tierH);
+      plantCtx.lineTo(tierW/2 + s.random(-3,3), tierY);
+      plantCtx.lineTo(-tierW/2 + s.random(-3,3), tierY);
+      plantCtx.closePath();
+      plantCtx.fill();
+      plantCtx.stroke();
+      // Needle clusters: small radiating lines from branch tips
+      var nNeedles = 5 + Math.floor(s.random(0, 4));
+      for (var ni = 0; ni < nNeedles; ni++) {
+        var nx = -tierW/2 + (ni/(nNeedles-1)) * tierW + s.random(-2,2);
+        var ny = tierY + s.random(-2, 2);
+        var nLen = 4 + s.random(0, 5);
+        var nAngle = Math.PI * 0.5 + s.random(-0.4, 0.4);
+        plantCtx.strokeStyle = p.leafCol + 'cc';
+        plantCtx.lineWidth = 0.5;
+        plantCtx.beginPath();
+        for (var nk = -2; nk <= 2; nk++) {
+          var na = nAngle + nk * 0.25;
+          plantCtx.moveTo(nx, ny);
+          plantCtx.lineTo(nx + Math.cos(na)*nLen, ny - Math.sin(na)*nLen);
+        }
+        plantCtx.stroke();
+      }
+      plantCtx.restore();
     }
-    s.pop();
+    plantCtx.restore();
   }
 
+  // Fern: rachis + bilateral pinnae with sub-pinnules
   function drawFern(p) {
-    function frond(depth, len, angle) {
-      if (depth <= 0 || len < 2) return;
-      var windOff = calcWindOffset(depth);
-      var x2 = Math.cos(angle)*len + windOff;
-      var y2 = Math.sin(angle)*len;
-      rLine(0,0,x2,y2, depth<=1?p.leafCol:p.trunkCol, Math.max(0.4,depth*0.45), currentRoughness);
-      s.push(); s.translate(x2,y2);
-      frond(depth-1, len*0.88, angle+s.random(-0.06,0.06));
-      var pa = s.radians(p.angle);
-      if (depth > 1) {
-        frond(depth-2, len*0.42, angle+pa);
-        frond(depth-2, len*0.42, angle-pa);
-      } else {
-        drawLeaf(p, angle+pa);
-        drawLeaf(p, angle-pa);
-      }
-      s.pop();
+    function pinnule(len, angle) {
+      if (len < 2) return;
+      var ex = Math.cos(angle)*len;
+      var ey = Math.sin(angle)*len;
+      rLine(0, 0, ex, ey, p.leafCol+'aa', 0.6);
+      // Small leaflets at tip
+      plantCtx.save();
+      plantCtx.translate(ex, ey);
+      rEllipse(0, 0, len*0.18, len*0.38, p.leafCol+'66', p.leafCol+'44', 0.4);
+      plantCtx.restore();
     }
-    for (var i = 0; i < 3; i++) {
-      s.push(); s.rotate((i-1)*0.20);
-      frond(p.depth, 88+i*10, -s.HALF_PI);
-      s.pop();
-    }
-  }
 
-  function drawGrass(p) {
-    var nS = 5 + Math.floor(s.random(0,5));
-    for (var i = 0; i < nS; i++) {
-      var sx = (i-(nS-1)/2)*20 + s.random(-5,5);
-      s.push(); s.translate(sx,0);
-      var sh = 60+s.random(0,65);
-      var nodes = 3+Math.floor(s.random(0,3));
-      var cx2 = s.random(-16,16);
-      for (var seg = 0; seg < nodes; seg++) {
-        var t0 = seg/nodes;
-        var t1 = (seg+1)/nodes;
-        var y0 = -sh*t0;
-        var y1 = -sh*t1;
-        var windOff = calcWindOffset(Math.max(1, nodes - seg));
-        var nx0 = cx2*(2*t0*(1-t0))+(cx2*0.4)*t0*t0 + windOff;
-        var nx1 = cx2*(2*t1*(1-t1))+(cx2*0.4)*t1*t1 + windOff;
-        rLine(nx0,y0,nx1,y1, p.trunkCol, 1.4+s.random(0,0.4), currentRoughness*0.6);
-        rc.ellipse(nx1,y1,4,2.5,{stroke:p.trunkCol,strokeWidth:1,roughness:0.8,fill:'none'});
-        s.push(); s.translate(nx1,y1);
-        var ld = seg%2===0?1:-1;
-        s.rotate(-s.HALF_PI + ld*0.42);
-        var lsz = p.leafSize;
-        rEllipse(0,-lsz*0.5,lsz*0.22,lsz*0.5,p.leafCol+'77',p.leafCol+'55',0.5,currentRoughness);
-        s.pop();
+    function pinna(len, angle, hasSub) {
+      if (len < 4) return;
+      var ex = Math.cos(angle)*len;
+      var ey = Math.sin(angle)*len;
+      rLine(0, 0, ex, ey, p.trunkCol+'bb', 0.8);
+      var pa = s.radians(p.angle * 0.8);
+      var steps = Math.floor(len / 7);
+      for (var i = 1; i <= steps; i++) {
+        var frac = i / (steps+1);
+        var px = ex * frac;
+        var py = ey * frac;
+        var pLen = len * (1-frac) * 0.55;
+        plantCtx.save();
+        plantCtx.translate(px, py);
+        if (hasSub) {
+          pinnule(pLen, angle + pa);
+          pinnule(pLen, angle - pa);
+        } else {
+          rEllipse(pLen*0.4, 0, pLen*0.22, pLen*0.38, p.leafCol+'77', p.leafCol+'55', 0.5);
+          rEllipse(-pLen*0.4, 0, pLen*0.22, pLen*0.38, p.leafCol+'77', p.leafCol+'55', 0.5);
+        }
+        plantCtx.restore();
       }
-      s.pop();
     }
-  }
 
-  function drawWillow(p) {
-    var th = 75+s.random(-10,10);
-    var trunkWind = calcWindOffset(1) * 0.3;
-    rLine(0,0,trunkWind,-th, p.trunkCol, 4, currentRoughness*0.7);
-    s.push(); s.translate(trunkWind,-th);
-    var nb = 6+Math.floor(s.random(0,5));
-    for (var b = 0; b < nb; b++) {
-      var ba = s.random(-0.7,0.7);
-      var bl = 28+s.random(0,28);
+    // Draw 1-3 fronds
+    var nFronds = 2 + Math.floor(s.random(0, 2));
+    for (var f = 0; f < nFronds; f++) {
+      var baseAngle = -s.HALF_PI + (f - (nFronds-1)/2) * 0.22;
+      var rachisLen = 90 + s.random(-15, 20);
       var windOff = calcWindOffset(2);
-      var bx = Math.cos(-s.HALF_PI+ba)*bl + windOff;
-      var by = Math.sin(-s.HALF_PI+ba)*bl;
-      rLine(0,0,bx,by, p.trunkCol, 1.2, currentRoughness*0.7);
-      s.push(); s.translate(bx,by);
-      var ns = 2+Math.floor(s.random(0,4));
+      plantCtx.save();
+      plantCtx.translate(windOff * 0.4, 0);
+      // Draw rachis as gentle drooping curve
+      var cpx = Math.cos(baseAngle) * rachisLen * 0.5 + s.random(-10, 10);
+      var cpy = Math.sin(baseAngle) * rachisLen * 0.5 + rachisLen * 0.08;
+      var ex = Math.cos(baseAngle) * rachisLen;
+      var ey = Math.sin(baseAngle) * rachisLen;
+      plantCtx.strokeStyle = p.trunkCol;
+      plantCtx.lineWidth = 1.2;
+      plantCtx.lineCap = 'round';
+      plantCtx.beginPath();
+      plantCtx.moveTo(0, 0);
+      plantCtx.quadraticCurveTo(cpx, cpy, ex, ey);
+      plantCtx.stroke();
+      // Place pinnae along rachis
+      var nPinnae = 5 + Math.floor(s.random(0, 4));
+      for (var i = 0; i < nPinnae; i++) {
+        var tfrac = (i+1) / (nPinnae+1);
+        var t = tfrac;
+        var qx = 2*(1-t)*t*cpx + t*t*ex;
+        var qy = 2*(1-t)*t*cpy + t*t*ey;
+        var pLen = rachisLen * (1-tfrac) * 0.38 + 8;
+        var pa2 = s.radians(p.angle);
+        plantCtx.save();
+        plantCtx.translate(qx, qy);
+        pinna(pLen, baseAngle + pa2, tfrac < 0.5);
+        pinna(pLen, baseAngle - pa2, tfrac < 0.5);
+        plantCtx.restore();
+      }
+      plantCtx.restore();
+    }
+  }
+
+  // Grass/bamboo: culms with nodes and tapered leaf blades
+  function drawGrass(p) {
+    var nCulms = 4 + Math.floor(s.random(0, 4));
+    for (var i = 0; i < nCulms; i++) {
+      var sx = (i - (nCulms-1)/2) * 18 + s.random(-6, 6);
+      var sh = 70 + s.random(0, 80);
+      var curl = s.random(-18, 18);
+      var nodes = 3 + Math.floor(s.random(0, 4));
+      plantCtx.save();
+      plantCtx.translate(sx, 0);
+      // Draw culm as quadratic bezier
+      var windOff = calcWindOffset(2);
+      var cpx2 = curl + windOff;
+      var cpy2 = -sh * 0.5;
+      var ex2 = curl * 0.5 + windOff;
+      var ey2 = -sh;
+      plantCtx.strokeStyle = p.trunkCol;
+      plantCtx.lineWidth = 1.5 + s.random(0, 0.8);
+      plantCtx.lineCap = 'round';
+      plantCtx.beginPath();
+      plantCtx.moveTo(0, 0);
+      plantCtx.quadraticCurveTo(cpx2, cpy2, ex2, ey2);
+      plantCtx.stroke();
+      // Draw nodes and leaves along culm
+      for (var seg = 1; seg <= nodes; seg++) {
+        var tf = seg / (nodes + 1);
+        var nqx = 2*(1-tf)*tf*cpx2 + tf*tf*ex2;
+        var nqy = 2*(1-tf)*tf*cpy2 + tf*tf*ey2;
+        // Node mark
+        plantCtx.strokeStyle = p.trunkCol;
+        plantCtx.lineWidth = 1.2;
+        plantCtx.beginPath();
+        plantCtx.moveTo(nqx - 5, nqy);
+        plantCtx.lineTo(nqx + 5, nqy);
+        plantCtx.stroke();
+        // Leaf blades: tapered bezier, longer in middle culm
+        var leafLen = p.leafSize * (1.2 - Math.abs(tf - 0.55)) * (1.5 + s.random(0,0.8));
+        var leafSides = [1, -1];
+        for (var ls = 0; ls < leafSides.length; ls++) {
+          var ld = leafSides[ls];
+          var la = -s.HALF_PI + ld * (0.4 + s.random(-0.15, 0.15));
+          var lx = nqx + ld * 3;
+          var ly = nqy;
+          var ltx = lx + Math.cos(la) * leafLen;
+          var lty = ly + Math.sin(la) * leafLen;
+          var lcpx = lx + ld * leafLen * 0.4 + Math.cos(la) * leafLen * 0.5;
+          var lcpy = ly + Math.sin(la) * leafLen * 0.5 - leafLen * 0.1;
+          plantCtx.strokeStyle = p.leafCol + 'cc';
+          plantCtx.lineWidth = 1.2;
+          plantCtx.lineCap = 'round';
+          plantCtx.beginPath();
+          plantCtx.moveTo(lx, ly);
+          plantCtx.quadraticCurveTo(lcpx, lcpy, ltx, lty);
+          plantCtx.stroke();
+        }
+      }
+      plantCtx.restore();
+    }
+  }
+
+  // Willow: thick tapering trunk, arcing branches with pendulous strands
+  function drawWillow(p) {
+    var th = 80 + s.random(-10, 10);
+    var trunkWind = calcWindOffset(1) * 0.3;
+    // Trunk with taper effect
+    for (var tw = 5; tw >= 1; tw--) {
+      rLine(0, -tw*0.5, trunkWind * (tw/5), -th * (tw/5), p.trunkCol, tw);
+    }
+    rLine(0, 0, trunkWind, -th, p.trunkCol, 5);
+    plantCtx.save();
+    plantCtx.translate(trunkWind, -th);
+    var nb = 6 + Math.floor(s.random(0, 5));
+    for (var b = 0; b < nb; b++) {
+      var ba = s.random(-0.75, 0.75);
+      var bl = 30 + s.random(0, 30);
+      var windOff2 = calcWindOffset(2);
+      var bx = Math.cos(-s.HALF_PI + ba) * bl + windOff2;
+      var by = Math.sin(-s.HALF_PI + ba) * bl;
+      rLine(0, 0, bx, by, p.trunkCol, 1.4);
+      plantCtx.save();
+      plantCtx.translate(bx, by);
+      // Pendulous strands: bezier curves drooping down
+      var ns = 6 + Math.floor(s.random(0, 9));
       for (var st = 0; st < ns; st++) {
-        var sx2 = s.random(-10,10) + calcWindOffset(3);
-        var dl = 20+s.random(0,30);
-        rc.linearPath([
-          [sx2,0],[sx2+s.random(-8,8),dl*0.5],[sx2+s.random(-6,6),dl]
-        ], {stroke:p.leafCol+'aa',strokeWidth:0.7,roughness:currentRoughness*1.4});
+        var stx0 = s.random(-12, 12);
+        var windOff3 = calcWindOffset(3);
+        var dl = 28 + s.random(0, 40);
+        var stcpx = stx0 + windOff3 + s.random(-10, 10);
+        var stcpy = dl * 0.5;
+        var stx1 = stx0 + windOff3 * 0.8 + s.random(-8, 8);
+        plantCtx.strokeStyle = p.leafCol + 'aa';
+        plantCtx.lineWidth = 0.7;
+        plantCtx.lineCap = 'round';
+        plantCtx.beginPath();
+        plantCtx.moveTo(stx0, 0);
+        plantCtx.quadraticCurveTo(stcpx, stcpy, stx1, dl);
+        plantCtx.stroke();
+        // Small leaf ellipses along strand
+        var nLeaflets = 3 + Math.floor(s.random(0, 4));
+        for (var sl2 = 0; sl2 < nLeaflets; sl2++) {
+          var lt = (sl2 + 1) / (nLeaflets + 1);
+          var lqx = 2*(1-lt)*lt*stcpx + lt*lt*stx1;
+          var lqy = 2*(1-lt)*lt*stcpy + lt*lt*dl;
+          rEllipse(lqx, lqy, 3, 5, p.leafCol + '77', p.leafCol + '55', 0.4);
+        }
       }
-      s.pop();
+      plantCtx.restore();
     }
-    s.pop();
+    plantCtx.restore();
   }
 
+  // Cactus: cylindrical body, optional arms, spine clusters
   function drawCactus(p) {
-    function arm(h, w, depth2) {
+    function cactusArm(h, w, depth2) {
       if (depth2 <= 0) return;
-      rc.rectangle(-w/2,-h,w,h,{fill:p.leafCol+'55',stroke:p.trunkCol,strokeWidth:0.8,fillStyle:'solid',roughness:currentRoughness});
-      for (var sp = 0; sp < 4; sp++) {
-        var sy = -h*(0.15+sp*0.22);
-        rLine(-w/2,sy,-w/2-5,sy-3,p.trunkCol+'88',0.5,0.8);
-        rLine(w/2,sy,w/2+5,sy-3,p.trunkCol+'88',0.5,0.8);
+      // Rounded rect body
+      var r = w * 0.45;
+      plantCtx.save();
+      plantCtx.fillStyle = p.leafCol + '66';
+      plantCtx.strokeStyle = p.trunkCol;
+      plantCtx.lineWidth = 1.2;
+      plantCtx.beginPath();
+      plantCtx.moveTo(-w/2 + r, -h);
+      plantCtx.lineTo( w/2 - r, -h);
+      plantCtx.arcTo(  w/2, -h,  w/2, -h+r, r);
+      plantCtx.lineTo( w/2, -r);
+      plantCtx.arcTo(  w/2,  0,  w/2-r, 0, r);
+      plantCtx.lineTo(-w/2+r,  0);
+      plantCtx.arcTo(-w/2,  0, -w/2, -r, r);
+      plantCtx.lineTo(-w/2, -h+r);
+      plantCtx.arcTo(-w/2, -h, -w/2+r, -h, r);
+      plantCtx.closePath();
+      plantCtx.fill();
+      plantCtx.stroke();
+      // Spine clusters at regular intervals
+      var nSpineRows = 4;
+      for (var sp = 0; sp < nSpineRows; sp++) {
+        var sy = -h * (0.12 + sp * 0.22);
+        // Left spines
+        for (var sk = 0; sk < 3; sk++) {
+          var sa = Math.PI + (sk - 1) * 0.3;
+          rLine(-w/2, sy, -w/2 - Math.cos(sa)*6, sy + Math.sin(sa)*3, p.trunkCol+'99', 0.5);
+        }
+        // Right spines
+        for (var sk2 = 0; sk2 < 3; sk2++) {
+          var sa2 = (sk2 - 1) * 0.3;
+          rLine(w/2, sy, w/2 + Math.cos(sa2)*6, sy + Math.sin(sa2)*3, p.trunkCol+'99', 0.5);
+        }
+      }
+      plantCtx.restore();
+      // Arms: 0-2 depending on depth
+      if (depth2 > 1 && s.random() > 0.45) {
+        plantCtx.save();
+        plantCtx.translate(-w/2, -h * 0.55);
+        plantCtx.rotate(-s.HALF_PI);
+        cactusArm(h * 0.55, w * 0.70, depth2 - 1);
+        plantCtx.restore();
       }
       if (depth2 > 1 && s.random() > 0.45) {
-        s.push(); s.translate(-w/2,-h*0.55); s.rotate(-s.HALF_PI); arm(h*0.58,w*0.72,depth2-1); s.pop();
+        plantCtx.save();
+        plantCtx.translate(w/2, -h * 0.55);
+        plantCtx.rotate(s.HALF_PI);
+        cactusArm(h * 0.55, w * 0.70, depth2 - 1);
+        plantCtx.restore();
       }
-      if (depth2 > 1 && s.random() > 0.45) {
-        s.push(); s.translate(w/2,-h*0.55); s.rotate(s.HALF_PI); arm(h*0.58,w*0.72,depth2-1); s.pop();
+      // Optional flower on top
+      if (s.random() > 0.55) {
+        var fPetals = 5 + Math.floor(s.random(0, 3));
+        var fSz = 6;
+        for (var fp = 0; fp < fPetals; fp++) {
+          var fa = (fp / fPetals) * s.TWO_PI;
+          rEllipse(Math.cos(fa)*fSz*0.7, -h + Math.sin(fa)*fSz*0.7, fSz*0.3, fSz*0.55, '#f070a0bb', '#e050a0', 0.5);
+        }
+        rEllipse(0, -h, fSz*0.35, fSz*0.35, '#f8d040cc', '#e0b020', 0.5);
       }
     }
-    arm(85,20,p.depth);
+    cactusArm(85, 20, p.depth);
   }
 
+  // Flower: curved stem, side leaves, terminal flower head
   function drawFlower(p) {
-    function branch(depth2, len, angle) {
-      if (depth2 <= 0 || len < 5) return;
-      var windOff = calcWindOffset(depth2);
-      var x2 = Math.cos(angle)*len + windOff;
-      var y2 = Math.sin(angle)*len;
-      rLine(0,0,x2,y2, p.trunkCol, Math.max(0.5,depth2*0.65), currentRoughness);
-      s.push(); s.translate(x2,y2);
-      if (depth2 === 1) {
-        var petals = 5+Math.floor(s.random(0,4));
-        for (var pe = 0; pe < petals; pe++) {
-          var pa2 = (pe/petals)*s.TWO_PI;
-          var psz = p.leafSize;
-          s.push(); s.rotate(pa2);
-          rEllipse(0,-psz,psz*0.35,psz, p.leafCol+'88', p.leafCol+'66', 0.6, currentRoughness);
-          s.pop();
-        }
-        rEllipse(0,0,p.leafSize*0.4,p.leafSize*0.4,'#f8e040aa','#e8c030',0.8,currentRoughness*0.8);
-      } else {
-        var aRad = s.radians(p.angle);
-        var nb2 = p.branches || 2;
-        for (var b = 0; b < nb2; b++) {
-          var ba = angle + (b-(nb2-1)/2)*aRad + s.random(-0.1,0.1);
-          branch(depth2-1, len*p.ratio*s.random(0.85,1.12), ba);
-        }
-      }
-      s.pop();
-    }
     var trunkLen = parseFloat(document.getElementById('sl-length').value) || 72;
-    branch(p.depth, trunkLen, -s.HALF_PI);
+    var windOff = calcWindOffset(2);
+    // Draw curved stem
+    var stemCpx = windOff + s.random(-8, 8);
+    var stemCpy = -trunkLen * 0.5;
+    var stemEx = windOff * 0.5 + s.random(-4, 4);
+    var stemEy = -trunkLen;
+    plantCtx.save();
+    plantCtx.strokeStyle = p.trunkCol;
+    plantCtx.lineWidth = 2;
+    plantCtx.lineCap = 'round';
+    plantCtx.beginPath();
+    plantCtx.moveTo(0, 0);
+    plantCtx.quadraticCurveTo(stemCpx, stemCpy, stemEx, stemEy);
+    plantCtx.stroke();
+    // Side leaf pairs along stem
+    var nLeafPairs = 2 + Math.floor(s.random(0, 2));
+    for (var lp = 0; lp < nLeafPairs; lp++) {
+      var lt = (lp + 1) / (nLeafPairs + 1);
+      var lqx = 2*(1-lt)*lt*stemCpx + lt*lt*stemEx;
+      var lqy = 2*(1-lt)*lt*stemCpy + lt*lt*stemEy;
+      var lSz = p.leafSize * (0.6 + (1-lt)*0.6);
+      for (var ls3 = -1; ls3 <= 1; ls3 += 2) {
+        rEllipse(lqx + ls3 * lSz * 0.7, lqy, lSz * 0.3, lSz * 0.6, p.trunkCol + '77', p.trunkCol + '55', 0.5);
+      }
+    }
+    // Terminal flower head
+    plantCtx.save();
+    plantCtx.translate(stemEx, stemEy);
+    var petals = 5 + Math.floor(s.random(0, 4));
+    var psz = p.leafSize * 1.1;
+    for (var pe = 0; pe < petals; pe++) {
+      var pa3 = (pe / petals) * s.TWO_PI;
+      plantCtx.save();
+      plantCtx.rotate(pa3);
+      rEllipse(0, -psz * 0.85, psz * 0.32, psz * 0.78, p.leafCol + 'aa', p.leafCol + '77', 0.6);
+      plantCtx.restore();
+    }
+    // Center disc
+    rEllipse(0, 0, psz * 0.38, psz * 0.38, '#f8e040cc', '#e0c020', 0.8);
+    plantCtx.restore();
+    plantCtx.restore();
   }
 
   s.redrawPlant = function(prof, common, sci, bgColor) {
