@@ -69,7 +69,8 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
 .caption-input:focus{border-color:var(--accent)}
 #canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative}
 #canvas-wrap{position:relative;display:inline-block}
-#canvas-wrap canvas{display:block;transform-origin:50% 100%}
+#canvas-wrap canvas{display:block}
+#plant-canvas{position:absolute;top:0;left:0;transform-origin:50% 100%;pointer-events:none}
 @keyframes wind-sway{
   0%  {transform:rotate(0deg)}
   20% {transform:rotate(0.8deg)}
@@ -78,7 +79,7 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
   80% {transform:rotate(-0.3deg)}
   100%{transform:rotate(0deg)}
 }
-#canvas-wrap canvas.wind-on{
+#plant-canvas.wind-on{
   animation:wind-sway 2s cubic-bezier(.45,.05,.55,.95) infinite;
 }
 #caption-layer{position:absolute;inset:0;pointer-events:none;z-index:20}
@@ -329,6 +330,8 @@ var currentSci = '';
 var currentBg = '#fdfaf4';
 var currentFrame = 'none';
 var currentRoughness = 1.4;
+var bgCtx = null;
+var plantCtx = null;
 var pInst = null;
 var captions = [];
 var captionIdCounter = 0;
@@ -400,11 +403,30 @@ var sketch = function(s) {
     var size = Math.min(area.clientWidth - 32, area.clientHeight - 32, 520);
     size = Math.max(size, 260);
     W = size; H = size;
-    var cnv = s.createCanvas(W, H);
+
+    // bg canvas — static background (grid, ground line, annotations)
+    var bgCnv = document.createElement('canvas');
+    bgCnv.id = 'bg-canvas';
+    bgCnv.width = W; bgCnv.height = H;
+    document.getElementById('canvas-wrap').appendChild(bgCnv);
+    bgCtx = bgCnv.getContext('2d');
+
+    // plant canvas — only the plant, transparent bg, subject to wind CSS
+    var pCnv = document.createElement('canvas');
+    pCnv.id = 'plant-canvas';
+    pCnv.width = W; pCnv.height = H;
+    document.getElementById('canvas-wrap').appendChild(pCnv);
+    plantCtx = pCnv.getContext('2d');
+    rc = rough.canvas(pCnv);
+
+    // p5 canvas hidden (used only for p5 random/math utilities)
+    var cnv = s.createCanvas(1, 1);
     cnv.parent('canvas-wrap');
+    cnv.elt.style.display = 'none';
+
     var cl = document.getElementById('caption-layer');
     document.getElementById('canvas-wrap').appendChild(cl);
-    rc = rough.canvas(cnv.elt);
+
     s.frameRate(30);
     drawScene(currentBg);
   };
@@ -436,16 +458,39 @@ var sketch = function(s) {
 
   function drawScene(bgColor) {
     bgColor = bgColor || '#fdfaf4';
-    var rgb = hexToRgb(bgColor);
-    s.background(rgb[0], rgb[1], rgb[2]);
-    s.stroke(120, 110, 95, 20);
-    s.strokeWeight(0.5);
-    for (var gx = 0; gx < W; gx += 32) s.line(gx, 0, gx, H);
-    for (var gy = 0; gy < H; gy += 32) s.line(0, gy, W, gy);
+    if (!bgCtx || !plantCtx) return;
+
+    // --- BG canvas: background, grid, ground line, annotations ---
+    bgCtx.clearRect(0, 0, W, H);
+    bgCtx.fillStyle = bgColor;
+    bgCtx.fillRect(0, 0, W, H);
+    // Grid
+    bgCtx.strokeStyle = 'rgba(120,110,95,0.07)';
+    bgCtx.lineWidth = 0.5;
+    for (var gx = 0; gx < W; gx += 32) { bgCtx.beginPath(); bgCtx.moveTo(gx,0); bgCtx.lineTo(gx,H); bgCtx.stroke(); }
+    for (var gy = 0; gy < H; gy += 32) { bgCtx.beginPath(); bgCtx.moveTo(0,gy); bgCtx.lineTo(W,gy); bgCtx.stroke(); }
+    // Ground line
+    bgCtx.strokeStyle = 'rgba(100,80,50,0.15)';
+    bgCtx.lineWidth = 1;
+    bgCtx.beginPath(); bgCtx.moveTo(20,H-38); bgCtx.lineTo(W-20,H-38); bgCtx.stroke();
+    // Annotations
+    bgCtx.font = '300 10px Outfit,sans-serif';
+    bgCtx.fillStyle = 'rgba(100,88,68,0.7)';
+    bgCtx.textAlign = 'left';
+    bgCtx.fillText(currentCommon, 16, H-18);
+    bgCtx.font = 'italic 300 9px Outfit,sans-serif';
+    bgCtx.fillStyle = 'rgba(100,88,68,0.45)';
+    bgCtx.fillText(currentSci, 16, H-8);
+    bgCtx.textAlign = 'right';
+    bgCtx.font = '300 9px Outfit,sans-serif';
+    bgCtx.fillStyle = 'rgba(100,88,68,0.35)';
+    bgCtx.fillText('Plant It', W-16, H-14);
+
+    // --- Plant canvas: only the plant, transparent bg ---
+    plantCtx.clearRect(0, 0, W, H);
     var p = currentProfile;
-    rc.line(20, H-38, W-20, H-38, {stroke:'rgba(100,80,50,0.18)',strokeWidth:1,roughness:currentRoughness});
-    s.push();
-    s.translate(W/2, H-38);
+    plantCtx.save();
+    plantCtx.translate(W/2, H-38);
     var trunkLen = parseFloat(document.getElementById('sl-length').value) || 75;
     if (p.form === 'grass') drawGrass(p);
     else if (p.form === 'fern') drawFern(p);
@@ -454,22 +499,7 @@ var sketch = function(s) {
     else if (p.form === 'cactus') drawCactus(p);
     else if (p.form === 'flower') drawFlower(p);
     else drawTree(p, p.depth, trunkLen, -s.HALF_PI);
-    s.pop();
-    s.noStroke();
-    s.fill(100, 88, 68, 80);
-    s.textFont('Outfit');
-    s.textSize(10);
-    s.textStyle(s.NORMAL);
-    s.textAlign(s.LEFT);
-    s.text(currentCommon, 16, H-18);
-    s.fill(100, 88, 68, 55);
-    s.textSize(9);
-    s.textStyle(s.ITALIC);
-    s.text(currentSci, 16, H-8);
-    s.textAlign(s.RIGHT);
-    s.textStyle(s.NORMAL);
-    s.fill(100, 88, 68, 45);
-    s.text('Plant It', W-16, H-14);
+    plantCtx.restore();
   }
 
   function calcWindOffset(depth) {
@@ -484,7 +514,7 @@ var sketch = function(s) {
   function rLine(x1,y1,x2,y2,col,wt,rough2) {
     if (windActive && !smokeActive) {
       // Clean smooth line during animation
-      var ctx2 = s.canvas.getContext('2d');
+      var ctx2 = plantCtx;
       ctx2.save();
       ctx2.strokeStyle = col || '#333';
       ctx2.lineWidth = wt || 1;
@@ -497,7 +527,7 @@ var sketch = function(s) {
       return;
     }
     if (lineMode === 'clean') {
-      var ctx = s.canvas.getContext('2d');
+      var ctx = plantCtx;
       ctx.save();
       ctx.strokeStyle = col;
       ctx.lineWidth = wt || 1;
@@ -514,7 +544,7 @@ var sketch = function(s) {
   function rEllipse(x,y,rw,rh,fill,stroke2,wt,rough2) {
     if (windActive && !smokeActive) {
       // Clean ellipse during animation
-      var ctx2 = s.canvas.getContext('2d');
+      var ctx2 = plantCtx;
       ctx2.save();
       ctx2.beginPath();
       ctx2.ellipse(x,y,rw,rh,0,0,Math.PI*2);
@@ -900,8 +930,16 @@ function bakeFrame(sourceCanvas, common, sci, frameStyle, frameColor) {
 }
 
 function doExport() {
-  var srcCanvas = document.querySelector('#canvas-wrap canvas');
-  if (!srcCanvas) return;
+  // Merge bg + plant canvas into one
+  var bgCnv = document.getElementById('bg-canvas');
+  var pCnv = document.getElementById('plant-canvas');
+  if (!bgCnv) return;
+  var merged = document.createElement('canvas');
+  merged.width = bgCnv.width; merged.height = bgCnv.height;
+  var mCtx = merged.getContext('2d');
+  mCtx.drawImage(bgCnv, 0, 0);
+  if (pCnv) mCtx.drawImage(pCnv, 0, 0);
+  var srcCanvas = merged;
   var frameColor = document.getElementById('col-frame').value;
   var framed = bakeFrame(srcCanvas, currentCommon, currentSci, currentFrame, frameColor);
   var final = document.createElement('canvas');
@@ -983,8 +1021,8 @@ document.getElementById('btn-dark').addEventListener('click', function() {
 // Wind toggle
 document.getElementById('toggle-wind').addEventListener('change', function() {
   windActive = this.checked;
-  var cnv = document.querySelector('#canvas-wrap canvas');
-  if (cnv) cnv.classList.toggle('wind-on', windActive);
+  var pcnv = document.getElementById('plant-canvas');
+  if (pcnv) pcnv.classList.toggle('wind-on', windActive);
   if (!windActive && pInst && pInst.forceRedraw) pInst.forceRedraw();
 });
 
@@ -1146,11 +1184,10 @@ var starters = ['bamboo','cherry blossom','fern','pine','willow','lotus','ginkgo
 var s0 = starters[Math.floor(Math.random()*starters.length)];
 document.getElementById('search-input').value = s0;
 waitAndGenerate(s0);
-// Apply wind CSS class if wind is on by default
 setTimeout(function(){
-  var cnv = document.querySelector('#canvas-wrap canvas');
-  if (cnv && windActive) cnv.classList.add('wind-on');
-}, 300);
+  var pcnv = document.getElementById('plant-canvas');
+  if (pcnv && windActive) pcnv.classList.add('wind-on');
+}, 400);
 </script>
 </body>
 </html>
