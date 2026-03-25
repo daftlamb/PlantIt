@@ -69,7 +69,18 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
 .caption-input:focus{border-color:var(--accent)}
 #canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative}
 #canvas-wrap{position:relative;display:inline-block}
-#canvas-wrap canvas{display:block}
+#canvas-wrap canvas{display:block;transform-origin:50% 100%}
+@keyframes wind-sway{
+  0%  {transform:rotate(0deg)}
+  20% {transform:rotate(0.8deg)}
+  45% {transform:rotate(-0.5deg)}
+  65% {transform:rotate(1.1deg)}
+  80% {transform:rotate(-0.3deg)}
+  100%{transform:rotate(0deg)}
+}
+#canvas-wrap canvas.wind-on{
+  animation:wind-sway 6s cubic-bezier(.45,.05,.55,.95) infinite;
+}
 #caption-layer{position:absolute;inset:0;pointer-events:none;z-index:20}
 .caption-item{position:absolute;cursor:move;pointer-events:all;user-select:none;white-space:pre;line-height:1.2}
 #frame-overlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:10;display:none}
@@ -409,11 +420,7 @@ var sketch = function(s) {
   };
 
   s.draw = function() {
-    if (windActive && !smokeActive) {
-      // Multi-frequency wind — slow drift + occasional gust
-      windT += 0.00008;
-      drawScene(currentBg);
-    }
+    // No per-frame redraw for wind — handled by CSS animation
   };
 
   // Wind easing: multi-sine blend for organic feel
@@ -976,6 +983,8 @@ document.getElementById('btn-dark').addEventListener('click', function() {
 // Wind toggle
 document.getElementById('toggle-wind').addEventListener('change', function() {
   windActive = this.checked;
+  var cnv = document.querySelector('#canvas-wrap canvas');
+  if (cnv) cnv.classList.toggle('wind-on', windActive);
   if (!windActive && pInst && pInst.forceRedraw) pInst.forceRedraw();
 });
 
@@ -1137,6 +1146,11 @@ var starters = ['bamboo','cherry blossom','fern','pine','willow','lotus','ginkgo
 var s0 = starters[Math.floor(Math.random()*starters.length)];
 document.getElementById('search-input').value = s0;
 waitAndGenerate(s0);
+// Apply wind CSS class if wind is on by default
+setTimeout(function(){
+  var cnv = document.querySelector('#canvas-wrap canvas');
+  if (cnv && windActive) cnv.classList.add('wind-on');
+}, 300);
 </script>
 </body>
 </html>
