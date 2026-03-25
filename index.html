@@ -6,599 +6,520 @@
 <title>Plant It — Generative Botany</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<script src="https://unpkg.com/roughjs@4.6.6/bundled/rough.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f7f5f0;
-  --surface:#f0ede6;
-  --border:#ddd8cc;
-  --text:#1a1a1a;
-  --muted:#888070;
-  --accent:#3a6644;
+  --bg:#f7f5f0;--surface:#f0ede6;--border:#ddd8cc;
+  --text:#1a1a1a;--muted:#888070;--accent:#3a6644;
   --header-h:48px;
 }
-body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-weight:300;min-height:100vh;display:flex;flex-direction:column;}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-weight:300;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* ---- Header ---- */
 header{
-  height:var(--header-h);display:flex;align-items:center;justify-content:space-between;
+  height:var(--header-h);flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
   padding:0 20px;border-bottom:1px solid var(--border);
-  background:rgba(247,245,240,.92);backdrop-filter:blur(8px);
-  position:sticky;top:0;z-index:10;
+  background:rgba(247,245,240,.95);backdrop-filter:blur(8px);z-index:10;
 }
-.header-left{display:flex;align-items:center;gap:16px}
-.logo{font-size:15px;font-weight:500;letter-spacing:.01em}
-.logo span{color:var(--accent)}
-.header-btn{
-  background:none;border:1px solid var(--border);border-radius:6px;
-  color:var(--muted);font-family:inherit;font-size:11px;font-weight:400;
-  padding:5px 12px;cursor:pointer;transition:all .15s;letter-spacing:.04em;
-}
-.header-btn:hover{border-color:var(--accent);color:var(--accent)}
+.logo{font-size:15px;font-weight:500}.logo span{color:var(--accent)}
+.hbtn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:inherit;font-size:11px;padding:5px 12px;cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.hbtn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ---- Layout ---- */
-#app{display:flex;flex:1;overflow:hidden;flex-direction:column}
+#canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative}
+#p5-canvas-wrap canvas{border-radius:4px;box-shadow:0 2px 24px rgba(0,0,0,.08)}
 
-/* Canvas area */
-#canvas-area{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  background:var(--bg);padding:32px;
-  position:relative;
-}
-#plant-canvas{
-  display:block;
-  max-width:min(480px,100%);max-height:min(480px,calc(100vh - var(--header-h) - 200px));
-  width:480px;height:480px;
-  border-radius:4px;
-  box-shadow:0 2px 20px rgba(0,0,0,.08);
-}
-#canvas-hint{
-  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
-  font-size:11px;color:var(--muted);letter-spacing:.04em;
-  pointer-events:none;
-}
-
-/* Panel */
 #panel{
-  border-top:1px solid var(--border);background:var(--surface);
-  padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px;
+  flex-shrink:0;border-top:1px solid var(--border);background:var(--surface);
+  padding:14px 20px 16px;display:flex;flex-direction:column;gap:10px;
 }
-
-/* Search */
 .search-row{display:flex;gap:8px}
-.search-input{
-  flex:1;background:white;border:1px solid var(--border);border-radius:8px;
-  padding:9px 14px;font-family:inherit;font-size:13px;color:var(--text);
-  outline:none;transition:border-color .15s;
-}
-.search-input:focus{border-color:var(--accent)}
-.btn-generate{
-  background:var(--accent);border:none;border-radius:8px;color:white;
-  font-family:inherit;font-size:12px;font-weight:500;padding:9px 18px;
-  cursor:pointer;transition:background .15s;white-space:nowrap;letter-spacing:.02em;
-}
-.btn-generate:hover{background:#2d5235}
-.btn-generate:disabled{opacity:.5;cursor:not-allowed}
+.sinput{flex:1;background:white;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
+.sinput:focus{border-color:var(--accent)}
+.gbtn{background:var(--accent);border:none;border-radius:8px;color:white;font-family:inherit;font-size:12px;font-weight:500;padding:9px 18px;cursor:pointer;transition:background .15s;letter-spacing:.02em}
+.gbtn:hover{background:#2d5235}.gbtn:disabled{opacity:.5;cursor:not-allowed}
 
-/* Examples */
 .examples{display:flex;gap:6px;flex-wrap:wrap}
-.ex-btn{
-  background:none;border:1px solid var(--border);border-radius:20px;
-  color:var(--muted);font-family:inherit;font-size:10px;
-  padding:4px 12px;cursor:pointer;transition:all .15s;letter-spacing:.03em;
-}
-.ex-btn:hover{border-color:var(--accent);color:var(--accent)}
+.exbtn{background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:10px;padding:4px 12px;cursor:pointer;transition:all .15s;letter-spacing:.03em}
+.exbtn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* Plant info */
-#plant-meta{display:none;align-items:center;justify-content:space-between;gap:12px}
-.meta-left{}
-.plant-common{font-size:14px;font-weight:400;letter-spacing:.02em}
-.plant-sci{font-size:11px;color:var(--muted);font-style:italic;margin-top:2px}
-.plant-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
-.plant-tag{font-size:9px;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:2px 8px;letter-spacing:.04em}
+#meta-row{display:none;align-items:center;justify-content:space-between;gap:8px}
+.plant-name{font-size:13px;font-weight:400}.plant-sci{font-size:10px;color:var(--muted);font-style:italic;margin-top:1px}
+.plant-tags{display:flex;gap:4px;margin-top:3px}
+.ptag{font-size:9px;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:1px 8px;letter-spacing:.04em}
+.expbtn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:11px;padding:7px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.expbtn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* Status */
-#status{font-size:11px;color:var(--muted);letter-spacing:.04em;min-height:16px}
+#status{font-size:11px;color:var(--muted);letter-spacing:.04em;min-height:14px}
 
-/* Export btn */
-.btn-export{
-  background:none;border:1px solid var(--border);border-radius:8px;
-  color:var(--muted);font-family:inherit;font-size:11px;
-  padding:7px 16px;cursor:pointer;transition:all .15s;letter-spacing:.03em;align-self:flex-end;
-}
-.btn-export:hover{border-color:var(--accent);color:var(--accent)}
-
-/* About modal */
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center}
-.modal-backdrop.open{display:flex}
-.modal{background:white;border-radius:12px;padding:28px;max-width:320px;width:90%;position:relative}
-.modal h3{font-size:14px;font-weight:500;margin-bottom:12px}
-.modal p{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px}
-.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer}
+.modal-bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100;align-items:center;justify-content:center}
+.modal-bd.open{display:flex}
+.modal{background:white;border-radius:12px;padding:28px;max-width:300px;width:90%;position:relative}
+.modal h3{font-size:14px;font-weight:500;margin-bottom:10px}
+.modal p{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px}
+.mclose{position:absolute;top:12px;right:14px;background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer}
 </style>
 </head>
 <body>
-
 <header>
-  <div class="header-left">
-    <div class="logo">Plant<span>It</span></div>
-  </div>
+  <div class="logo">Plant<span>It</span></div>
   <div style="display:flex;gap:8px">
-    <button class="header-btn" id="btn-export-hdr">↓ PNG</button>
-    <button class="header-btn" id="btn-about">About</button>
+    <button class="hbtn" id="btn-regen">↻ Redraw</button>
+    <button class="hbtn" id="btn-export">↓ PNG</button>
+    <button class="hbtn" id="btn-about">About</button>
   </div>
 </header>
 
-<div id="app">
-  <div id="canvas-area">
-    <canvas id="plant-canvas" width="480" height="480"></canvas>
-    <div id="canvas-hint">Search a plant to generate its portrait</div>
-  </div>
-
-  <div id="panel">
-    <div class="search-row">
-      <input class="search-input" id="search-input" type="text" placeholder="Plant name… bamboo, cherry, fern, lotus" />
-      <button class="btn-generate" id="btn-generate">Generate</button>
-    </div>
-
-    <div class="examples">
-      <button class="ex-btn" data-plant="bamboo">bamboo</button>
-      <button class="ex-btn" data-plant="cherry blossom">cherry blossom</button>
-      <button class="ex-btn" data-plant="fern">fern</button>
-      <button class="ex-btn" data-plant="sunflower">sunflower</button>
-      <button class="ex-btn" data-plant="moss">moss</button>
-      <button class="ex-btn" data-plant="lotus">lotus</button>
-      <button class="ex-btn" data-plant="pine">pine</button>
-      <button class="ex-btn" data-plant="willow">willow</button>
-      <button class="ex-btn" data-plant="ginkgo">ginkgo</button>
-      <button class="ex-btn" data-plant="cactus">cactus</button>
-    </div>
-
-    <div id="plant-meta">
-      <div class="meta-left">
-        <div class="plant-common" id="plant-common"></div>
-        <div class="plant-sci" id="plant-sci"></div>
-        <div class="plant-tags" id="plant-tags"></div>
-      </div>
-      <button class="btn-export" id="btn-export">↓ Export PNG</button>
-    </div>
-
-    <div id="status"></div>
-  </div>
+<div id="canvas-area">
+  <div id="p5-canvas-wrap"></div>
 </div>
 
-<!-- About modal -->
-<div class="modal-backdrop" id="about-modal">
+<div id="panel">
+  <div class="search-row">
+    <input class="sinput" id="sinput" type="text" placeholder="Plant name… bamboo, cherry, fern, lotus, pine" />
+    <button class="gbtn" id="gbtn">Generate</button>
+  </div>
+  <div class="examples">
+    <button class="exbtn" data-p="bamboo">bamboo</button>
+    <button class="exbtn" data-p="cherry blossom">cherry</button>
+    <button class="exbtn" data-p="fern">fern</button>
+    <button class="exbtn" data-p="pine">pine</button>
+    <button class="exbtn" data-p="willow">willow</button>
+    <button class="exbtn" data-p="lotus">lotus</button>
+    <button class="exbtn" data-p="cactus">cactus</button>
+    <button class="exbtn" data-p="ginkgo">ginkgo</button>
+    <button class="exbtn" data-p="moss">moss</button>
+    <button class="exbtn" data-p="sunflower">sunflower</button>
+  </div>
+  <div id="meta-row">
+    <div>
+      <div class="plant-name" id="pname"></div>
+      <div class="plant-sci" id="psci"></div>
+      <div class="plant-tags" id="ptags"></div>
+    </div>
+    <button class="expbtn" id="expbtn">↓ Export</button>
+  </div>
+  <div id="status">Search a plant to generate its portrait.</div>
+</div>
+
+<div class="modal-bd" id="about-modal">
   <div class="modal">
-    <button class="modal-close" id="about-close">×</button>
+    <button class="mclose" id="mclose">×</button>
     <h3>Plant It</h3>
-    <p>Search any plant name → fetch real species data from iNaturalist → generate a unique botanical portrait using procedural L-system algorithms.</p>
-    <p>Every generation is slightly different. Every plant has its own growth logic.</p>
-    <p style="margin-top:12px;color:#aaa">Made with curiosity · plantitapp.com</p>
+    <p>Search any plant → fetch real species data from iNaturalist → generate a unique hand-drawn botanical portrait.</p>
+    <p>Every generation is different. Every plant has its own growth logic.</p>
+    <p style="margin-top:10px;color:#bbb;font-size:11px">Made with p5.js + rough.js</p>
   </div>
 </div>
 
 <script>
-var canvas = document.getElementById('plant-canvas');
-var ctx = canvas.getContext('2d');
-var W = canvas.width, H = canvas.height;
-var generating = false;
+// ---- Plant profile ----
+function plantProfile(name) {
+  var n = name.toLowerCase();
+  var p = {form:'tree', depth:5, angle:28, ratio:0.70, branches:2,
+    trunkCol:'#6b4c2a', leafCol:'#4a7a38', leafSize:7, name:name};
 
-// Draw empty state
-(function(){
-  ctx.fillStyle = '#faf8f3';
-  ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle = 'rgba(180,170,150,.1)';
-  ctx.lineWidth = 0.5;
-  for(var gx=0;gx<W;gx+=32){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-  for(var gy=0;gy<H;gy+=32){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-})();
+  if (/bamboo|grass|reed|sedge/.test(n))
+    Object.assign(p,{form:'grass',angle:6,depth:6,ratio:0.9,trunkCol:'#5a7a2a',leafCol:'#80b840',leafSize:18});
+  else if (/fern|pterid/.test(n))
+    Object.assign(p,{form:'fern',angle:35,depth:5,ratio:0.62,trunkCol:'#3a5a20',leafCol:'#5a9030',leafSize:8});
+  else if (/moss|lichen/.test(n))
+    Object.assign(p,{form:'fern',angle:55,depth:4,ratio:0.50,trunkCol:'#4a5a20',leafCol:'#708830',leafSize:3});
+  else if (/cactus|succulent|aloe/.test(n))
+    Object.assign(p,{form:'cactus',angle:40,depth:3,ratio:0.65,trunkCol:'#4a7038',leafCol:'#60a040'});
+  else if (/cherry|sakura|plum|prunus|magnol|peach/.test(n))
+    Object.assign(p,{form:'flower',angle:42,depth:5,ratio:0.68,branches:3,trunkCol:'#7a3828',leafCol:'#f0a0b0',leafSize:5});
+  else if (/pine|fir|spruce|cedar|pinus/.test(n))
+    Object.assign(p,{form:'pine',angle:22,depth:7,ratio:0.76,trunkCol:'#4a3018',leafCol:'#2a5820',leafSize:3});
+  else if (/willow|salix/.test(n))
+    Object.assign(p,{form:'willow',angle:50,depth:5,ratio:0.76,trunkCol:'#5a4010',leafCol:'#8aaa30',leafSize:12});
+  else if (/lotus|waterlily|nymphae/.test(n))
+    Object.assign(p,{form:'flower',angle:55,depth:3,ratio:0.78,branches:5,trunkCol:'#3a6830',leafCol:'#f0c840',leafSize:14});
+  else if (/sunflower|helianthus/.test(n))
+    Object.assign(p,{form:'flower',angle:58,depth:3,ratio:0.60,branches:4,trunkCol:'#5a4010',leafCol:'#e8b820',leafSize:12});
+  else if (/ginkgo/.test(n))
+    Object.assign(p,{form:'tree',angle:24,depth:6,ratio:0.72,trunkCol:'#5a4018',leafCol:'#c8b428',leafSize:9});
+  else if (/oak|maple|beech|elm/.test(n))
+    Object.assign(p,{form:'tree',angle:34,depth:5,ratio:0.68,branches:3,trunkCol:'#6a4020',leafCol:'#589828',leafSize:8});
 
-// ---- iNaturalist API — filtered to Plantae (taxon_id 47126) ----
-function fetchPlant(name, cb) {
-  var url = 'https://api.inaturalist.org/v1/taxa'
-    + '?q=' + encodeURIComponent(name)
-    + '&taxon_id=47126'
-    + '&rank=species,genus,family'
-    + '&per_page=3'
-    + '&order_by=observations_count';
-  fetch(url)
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-      if (data.results && data.results.length > 0) {
-        cb(null, data.results[0]);
-      } else {
-        // Fallback: generate from name heuristic without API data
-        cb(null, {name: name, preferred_common_name: name, rank: 'species', iconic_taxon_name: 'Plantae'});
-      }
-    })
-    .catch(function() {
-      // Network error — still generate from name
-      cb(null, {name: name, preferred_common_name: name, rank: 'species', iconic_taxon_name: 'Plantae'});
-    });
-}
-
-// ---- Plant profile: name → growth parameters ----
-function plantProfile(taxon) {
-  var name = (taxon.name || '').toLowerCase();
-  var common = (taxon.preferred_common_name || taxon.name || '').toLowerCase();
-  var combined = name + ' ' + common;
-  var tags = [];
-  if (taxon.iconic_taxon_name) tags.push(taxon.iconic_taxon_name);
-  if (taxon.rank) tags.push(taxon.rank);
-
-  var p = {
-    depth:5, angle:26, ratio:0.70, branches:2,
-    trunkColor:'#5a4020', leafColor:'#4a8040', leafSize:6,
-    form:'tree', tags:tags,
-  };
-
-  if (/bamboo|grass|reed|sedge|poace|gramin/.test(combined)) {
-    p.form='grass'; p.angle=8; p.depth=6; p.ratio=0.88; p.branches=1;
-    p.trunkColor='#5a7830'; p.leafColor='#7ab840'; p.leafSize=16;
-  } else if (/fern|pterid|asplenium|polypodiop/.test(combined)) {
-    p.form='fern'; p.angle=32; p.depth=5; p.ratio=0.62; p.branches=2;
-    p.trunkColor='#3a5820'; p.leafColor='#5a9038'; p.leafSize=7;
-  } else if (/moss|lichen|bryophyt|hepatic/.test(combined)) {
-    p.form='fern'; p.angle=55; p.depth=4; p.ratio=0.52; p.branches=3;
-    p.trunkColor='#4a5820'; p.leafColor='#6a8830'; p.leafSize=3;
-  } else if (/cactus|succulent|cacti|opuntia|echeveria|aloe/.test(combined)) {
-    p.form='cactus'; p.angle=40; p.depth=3; p.ratio=0.65; p.branches=2;
-    p.trunkColor='#4a7038'; p.leafColor='#5a9040'; p.leafSize=0;
-  } else if (/cherry|sakura|plum|prunus|magnol|peach/.test(combined)) {
-    p.form='flower'; p.angle=40; p.depth=5; p.ratio=0.68; p.branches=3;
-    p.trunkColor='#6a3020'; p.leafColor='#f0a0b8'; p.leafSize=5;
-  } else if (/pine|fir|spruce|cedar|picea|abies|pinus|conifer/.test(combined)) {
-    p.form='pine'; p.angle=20; p.depth=7; p.ratio=0.78; p.branches=2;
-    p.trunkColor='#3a2a10'; p.leafColor='#2a5020'; p.leafSize=3;
-  } else if (/willow|salix/.test(combined)) {
-    p.form='willow'; p.angle=50; p.depth=5; p.ratio=0.78; p.branches=2;
-    p.trunkColor='#5a4010'; p.leafColor='#88aa30'; p.leafSize=12;
-  } else if (/lotus|nelumbo|waterlily|nymphae/.test(combined)) {
-    p.form='flower'; p.angle=52; p.depth=3; p.ratio=0.78; p.branches=5;
-    p.trunkColor='#3a6830'; p.leafColor='#f0c840'; p.leafSize=14;
-  } else if (/sunflower|helianthus|daisy|asteraceae/.test(combined)) {
-    p.form='flower'; p.angle=55; p.depth=3; p.ratio=0.62; p.branches=4;
-    p.trunkColor='#5a4010'; p.leafColor='#e8c020'; p.leafSize=12;
-  } else if (/ginkgo|maidenhair/.test(combined)) {
-    p.form='tree'; p.angle=22; p.depth=6; p.ratio=0.72; p.branches=2;
-    p.trunkColor='#4a3a10'; p.leafColor='#c8b830'; p.leafSize=8;
-  } else if (/oak|maple|beech|elm|liquidambar|deciduous/.test(combined)) {
-    p.form='tree'; p.angle=32; p.depth=5; p.ratio=0.68; p.branches=3;
-    p.trunkColor='#5a3818'; p.leafColor='#5a9828'; p.leafSize=7;
-  }
-
+  // slight random variation
   p.angle += (Math.random()-0.5)*8;
   p.ratio += (Math.random()-0.5)*0.05;
   return p;
 }
 
-// ---- Drawing ----
-function drawBackground() {
-  var bgGrad = ctx.createLinearGradient(0,0,0,H);
-  bgGrad.addColorStop(0,'#fdfaf4');
-  bgGrad.addColorStop(1,'#f4f0e4');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle = 'rgba(180,168,145,.1)';
-  ctx.lineWidth = 0.5;
-  for(var gx=0;gx<W;gx+=32){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-  for(var gy=0;gy<H;gy+=32){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-  // Ground line
-  ctx.strokeStyle='rgba(120,100,70,.12)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(0,H-36);ctx.lineTo(W,H-36);ctx.stroke();
-}
+// ---- p5 sketch ----
+var currentProfile = plantProfile('bamboo');
+var currentCommon = 'bamboo';
+var currentSci = '';
+var redrawFlag = false;
+var pInst = null;
 
-function drawAnnotation(commonName, sciName) {
-  ctx.font = '300 10px Outfit,sans-serif';
-  ctx.fillStyle = 'rgba(100,88,68,.4)';
-  ctx.textAlign = 'left';
-  ctx.fillText(commonName, 16, H-16);
-  ctx.font = 'italic 300 9px Outfit,sans-serif';
-  ctx.fillStyle = 'rgba(100,88,68,.28)';
-  ctx.fillText(sciName, 16, H-6);
-  ctx.textAlign = 'right';
-  ctx.font = '300 9px Outfit,sans-serif';
-  ctx.fillStyle = 'rgba(100,88,68,.25)';
-  ctx.fillText('Plant It', W-16, H-12);
-}
+var sketch = function(s) {
+  var rc = null;
+  var W, H;
 
-function drawLeaf(color, size, angle) {
-  if (size < 1) return;
-  ctx.save();
-  ctx.rotate(angle + Math.PI/2);
-  ctx.beginPath();
-  ctx.fillStyle = color + 'cc';
-  ctx.ellipse(0, -size/2, size*0.28, size/2, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-}
+  s.setup = function() {
+    var area = document.getElementById('canvas-area');
+    var size = Math.min(area.clientWidth - 32, area.clientHeight - 16, 520);
+    size = Math.max(size, 280);
+    W = size; H = size;
+    var cnv = s.createCanvas(W, H);
+    cnv.parent('p5-canvas-wrap');
+    rc = rough.canvas(cnv.elt);
+    s.noLoop();
+    drawScene();
+  };
 
-function drawTree(p, depth, len, angle) {
-  if (len === undefined) { len = 75; angle = -Math.PI/2; }
-  if (depth <= 0 || len < 2) return;
-  var x2 = Math.cos(angle)*len, y2 = Math.sin(angle)*len;
-  ctx.save();
-  ctx.strokeStyle = depth <= 2 ? p.leafColor+'99' : p.trunkColor;
-  ctx.lineWidth = Math.max(0.5, depth * 0.85);
-  ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(x2,y2); ctx.stroke();
-  ctx.translate(x2,y2);
-  if (depth <= 2) drawLeaf(p.leafColor, p.leafSize, angle);
-  var aRad = p.angle * Math.PI/180;
-  for (var b=0; b<p.branches; b++) {
-    var ba = angle + (b-(p.branches-1)/2)*aRad + (Math.random()-0.5)*0.12;
-    drawTree(p, depth-1, len*p.ratio*(0.88+Math.random()*0.24), ba);
+  s.windowResized = function() {
+    var area = document.getElementById('canvas-area');
+    var size = Math.min(area.clientWidth - 32, area.clientHeight - 16, 520);
+    size = Math.max(size, 280);
+    W = size; H = size;
+    s.resizeCanvas(W, H);
+    rc = rough.canvas(s.canvas);
+    drawScene();
+  };
+
+  function drawScene() {
+    // Background — warm paper
+    s.background(253, 250, 244);
+
+    // Subtle grid
+    s.stroke(175, 165, 148, 30);
+    s.strokeWeight(0.5);
+    for (var gx = 0; gx < W; gx += 32) s.line(gx, 0, gx, H);
+    for (var gy = 0; gy < H; gy += 32) s.line(0, gy, W, gy);
+
+    // Ground line (rough)
+    var p = currentProfile;
+    rc.line(20, H-38, W-20, H-38, {
+      stroke: 'rgba(100,80,50,0.18)', strokeWidth: 1, roughness: 1.8
+    });
+
+    // Draw plant from ground center
+    s.push();
+    s.translate(W/2, H-38);
+    if      (p.form==='grass')  drawGrass(p);
+    else if (p.form==='fern')   drawFern(p);
+    else if (p.form==='pine')   drawPine(p);
+    else if (p.form==='willow') drawWillow(p);
+    else if (p.form==='cactus') drawCactus(p);
+    else if (p.form==='flower') drawFlower(p);
+    else                        drawTree(p, p.depth, 80, -s.HALF_PI);
+    s.pop();
+
+    // Annotations
+    s.noStroke();
+    s.fill(100, 88, 68, 80);
+    s.textFont('Outfit');
+    s.textSize(10);
+    s.textStyle(s.NORMAL);
+    s.textAlign(s.LEFT);
+    s.text(currentCommon, 16, H-18);
+    s.fill(100, 88, 68, 55);
+    s.textSize(9);
+    s.textStyle(s.ITALIC);
+    s.text(currentSci, 16, H-8);
+    s.textAlign(s.RIGHT);
+    s.textStyle(s.NORMAL);
+    s.fill(100, 88, 68, 45);
+    s.text('Plant It', W-16, H-14);
   }
-  ctx.restore();
-}
 
-function drawPine(p) {
-  // Conical silhouette: multiple tiers
-  var tiers = p.depth;
-  var baseW = 60, trunkH = 30;
-  ctx.save();
-  // Trunk
-  ctx.strokeStyle=p.trunkColor; ctx.lineWidth=3; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-trunkH); ctx.stroke();
-  ctx.translate(0,-trunkH);
-  for (var t=0; t<tiers; t++) {
-    var frac = t/tiers;
-    var tierW = baseW*(1-frac*0.7);
-    var tierH = 20+frac*10;
-    var yOff = -tierH*0.5*t;
-    ctx.strokeStyle=p.leafColor; ctx.lineWidth=1+frac;
-    ctx.fillStyle=p.leafColor+'55';
-    ctx.beginPath();
-    ctx.moveTo(0, yOff-tierH);
-    ctx.lineTo(tierW/2, yOff);
-    ctx.lineTo(-tierW/2, yOff);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+  // --- rough helpers ---
+  function rLine(x1,y1,x2,y2,col,wt,rough2) {
+    rc.line(x1,y1,x2,y2,{stroke:col,strokeWidth:wt||1,roughness:rough2||1.4});
   }
-  ctx.restore();
-}
+  function rEllipse(x,y,rw,rh,fill,stroke2,wt,rough2) {
+    rc.ellipse(x,y,rw*2,rh*2,{fill:fill||'transparent',stroke:stroke2||fill||'transparent',strokeWidth:wt||0.8,fillStyle:'solid',roughness:rough2||1.6,fillWeight:0.5});
+  }
 
-function drawFern(p) {
-  function frond(depth, len, angle) {
-    if (depth<=0||len<1.5) return;
-    var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
-    ctx.strokeStyle=depth<=1?p.leafColor:p.trunkColor;
-    ctx.lineWidth=Math.max(0.4,depth*0.5);
-    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(x2,y2);ctx.stroke();
-    ctx.save();ctx.translate(x2,y2);
-    frond(depth-1,len*0.88,angle+(Math.random()-0.5)*0.08);
-    var pa=p.angle*Math.PI/180;
-    if(depth>1){
-      frond(depth-2,len*0.42,angle+pa);
-      frond(depth-2,len*0.42,angle-pa);
-    } else {
-      drawLeaf(p.leafColor,p.leafSize,angle+pa);
-      drawLeaf(p.leafColor,p.leafSize,angle-pa);
+  // --- Tree (recursive) ---
+  function drawTree(p, depth, len, angle) {
+    if (depth<=0||len<3) return;
+    var x2 = Math.cos(angle)*len;
+    var y2 = Math.sin(angle)*len;
+    var col = depth<=2 ? p.leafCol+'99' : p.trunkCol;
+    var wt = Math.max(0.5, depth*0.9);
+    rLine(0,0,x2,y2,col,wt,depth<=2?1.8:1.2);
+    s.push(); s.translate(x2,y2);
+    if (depth<=2) drawLeaf(p, angle);
+    var aRad = s.radians(p.angle);
+    for (var b=0;b<p.branches;b++) {
+      var ba = angle + (b-(p.branches-1)/2)*aRad + s.random(-0.1,0.1);
+      drawTree(p, depth-1, len*p.ratio*s.random(0.88,1.12), ba);
     }
-    ctx.restore();
+    s.pop();
   }
-  for(var i=0;i<3;i++){
-    ctx.save();ctx.rotate((i-1)*0.22);
-    frond(p.depth,90+i*12,-Math.PI/2);
-    ctx.restore();
-  }
-}
 
-function drawGrass(p) {
-  var nStems=5+Math.floor(Math.random()*4);
-  for(var s=0;s<nStems;s++){
-    var sx=(s-(nStems-1)/2)*22+(Math.random()-0.5)*8;
-    ctx.save();ctx.translate(sx,0);
-    var stemH=55+Math.random()*65;
-    var nodes=3+Math.floor(Math.random()*3);
-    var ctrlX=(Math.random()-0.5)*18;
-    ctx.strokeStyle=p.trunkColor; ctx.lineWidth=1.5+Math.random()*0.5; ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(0,0);
-    ctx.quadraticCurveTo(ctrlX,-stemH*0.6,ctrlX*0.4,-stemH);ctx.stroke();
-    for(var n=1;n<=nodes;n++){
-      var t=n/nodes;
-      var nx=ctrlX*(2*t*(1-t))+ctrlX*0.4*t*t;
-      var ny=-stemH*t;
-      ctx.beginPath();ctx.arc(nx,ny,1.5,0,Math.PI*2);
-      ctx.fillStyle=p.trunkColor;ctx.fill();
-      ctx.save();ctx.translate(nx,ny);
-      var ld=n%2===0?1:-1;
-      drawLeaf(p.leafColor,p.leafSize,-Math.PI/2+ld*0.45);
-      ctx.restore();
-    }
-    ctx.restore();
+  // --- Leaf ---
+  function drawLeaf(p, angle) {
+    s.push(); s.rotate(angle + s.HALF_PI);
+    var sz = p.leafSize || 6;
+    rEllipse(0, -sz*0.5, sz*0.28, sz*0.52, p.leafCol+'88', p.leafCol+'66', 0.5, 1.5);
+    s.pop();
   }
-}
 
-function drawWillow(p) {
-  var trunkH=80;
-  ctx.save();
-  // Trunk
-  ctx.strokeStyle=p.trunkColor;ctx.lineWidth=4;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-trunkH);ctx.stroke();
-  ctx.translate(0,-trunkH);
-  // Drooping branches
-  var nBranches=6+Math.floor(Math.random()*4);
-  for(var b=0;b<nBranches;b++){
-    var bAngle=-Math.PI/2+(b-(nBranches-1)/2)*0.35+(Math.random()-0.5)*0.2;
-    var bLen=30+Math.random()*30;
-    var bx=Math.cos(bAngle)*bLen, by=Math.sin(bAngle)*bLen;
-    ctx.save();ctx.translate(bx,by);
-    ctx.strokeStyle=p.trunkColor;ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(bx*0.3,by*0.3);ctx.stroke();
-    // Drooping strands
-    var nStrands=3+Math.floor(Math.random()*3);
-    for(var s=0;s<nStrands;s++){
-      var sx2=(s-(nStrands-1)/2)*8+(Math.random()-0.5)*4;
-      var dropLen=25+Math.random()*35;
-      ctx.strokeStyle=p.leafColor+'99';ctx.lineWidth=0.8;
-      ctx.beginPath();ctx.moveTo(sx2,0);
-      ctx.quadraticCurveTo(sx2+(Math.random()-0.5)*12,dropLen*0.5,sx2+(Math.random()-0.5)*8,dropLen);
-      ctx.stroke();
+  // --- Pine ---
+  function drawPine(p) {
+    var tiers = p.depth - 1;
+    var trunkH = 28 + s.random(-5,5);
+    rLine(0,0,0,-trunkH, p.trunkCol, 3, 1.0);
+    s.push(); s.translate(0,-trunkH);
+    for (var t=0;t<tiers;t++) {
+      var frac = t/tiers;
+      var tw = (70*(1-frac*0.65)) * (1+s.random(-0.06,0.06));
+      var th = 22+frac*8;
+      var yo = -th*0.45*t;
+      rc.polygon([
+        [0, yo-th], [tw/2+s.random(-3,3), yo], [-tw/2+s.random(-3,3), yo]
+      ], {fill:p.leafCol+'55', stroke:p.leafCol, strokeWidth:0.7,
+          fillStyle:'hachure', hachureAngle:55, hachureGap:4, roughness:1.8});
     }
-    ctx.restore();
+    s.pop();
   }
-  ctx.restore();
-}
 
-function drawCactus(p) {
-  function arm(h, w, depth) {
-    if(depth<=0) return;
-    ctx.fillStyle=p.trunkColor;
-    ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=0.5;
-    ctx.beginPath();
-    var rr=w/3;ctx.moveTo(-w/2+rr,-h);ctx.lineTo(w/2-rr,-h);ctx.quadraticCurveTo(w/2,-h,w/2,-h+rr);ctx.lineTo(w/2,0);ctx.lineTo(-w/2,0);ctx.lineTo(-w/2,-h+rr);ctx.quadraticCurveTo(-w/2,-h,-w/2+rr,-h);ctx.closePath();
-    ctx.fill();ctx.stroke();
-    // Spines
-    for(var s=0;s<4;s++){
-      var sy=-h*(0.2+s*0.2);
-      ctx.strokeStyle='rgba(200,180,120,.7)';ctx.lineWidth=0.5;
-      ctx.beginPath();ctx.moveTo(-w/2,sy);ctx.lineTo(-w/2-5,sy-3);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(w/2,sy);ctx.lineTo(w/2+5,sy-3);ctx.stroke();
-    }
-    if(depth>1&&Math.random()>.4){
-      ctx.save();ctx.translate(-w/2,-h*0.6);ctx.rotate(-Math.PI/2);arm(h*0.6,w*0.75,depth-1);ctx.restore();
-    }
-    if(depth>1&&Math.random()>.4){
-      ctx.save();ctx.translate(w/2,-h*0.6);ctx.rotate(Math.PI/2);arm(h*0.6,w*0.75,depth-1);ctx.restore();
-    }
-  }
-  ctx.save();
-  arm(90,22,p.depth);
-  ctx.restore();
-}
-
-function drawFlower(p) {
-  // Stem + branching + flower heads
-  function branch(depth, len, angle) {
-    if(depth<=0||len<4) return;
-    var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
-    ctx.strokeStyle=p.trunkColor;ctx.lineWidth=Math.max(0.5,depth*0.7);ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(x2,y2);ctx.stroke();
-    ctx.save();ctx.translate(x2,y2);
-    if(depth===1){
-      // Flower head
-      var petals=5+Math.floor(Math.random()*4);
-      for(var pe=0;pe<petals;pe++){
-        var pa2=(pe/petals)*Math.PI*2;
-        ctx.save();ctx.rotate(pa2);
-        ctx.beginPath();
-        ctx.fillStyle=p.leafColor+'cc';
-        ctx.ellipse(0,-p.leafSize,p.leafSize*0.4,p.leafSize,0,0,Math.PI*2);
-        ctx.fill();ctx.restore();
+  // --- Fern ---
+  function drawFern(p) {
+    function frond(depth, len, angle) {
+      if(depth<=0||len<2) return;
+      var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
+      rLine(0,0,x2,y2, depth<=1?p.leafCol:p.trunkCol, Math.max(0.4,depth*0.45), 1.6);
+      s.push(); s.translate(x2,y2);
+      frond(depth-1, len*0.88, angle+s.random(-0.06,0.06));
+      var pa = s.radians(p.angle);
+      if(depth>1){
+        frond(depth-2, len*0.42, angle+pa);
+        frond(depth-2, len*0.42, angle-pa);
+      } else {
+        drawLeaf(p, angle+pa); drawLeaf(p, angle-pa);
       }
-      ctx.beginPath();ctx.arc(0,0,p.leafSize*0.4,0,Math.PI*2);
-      ctx.fillStyle='#f8e040cc';ctx.fill();
-    } else {
-      var aRad=p.angle*Math.PI/180;
-      for(var b=0;b<p.branches;b++){
-        var ba=angle+(b-(p.branches-1)/2)*aRad+(Math.random()-0.5)*0.1;
-        branch(depth-1,len*p.ratio*(0.85+Math.random()*0.3),ba);
+      s.pop();
+    }
+    for(var i=0;i<3;i++){
+      s.push(); s.rotate((i-1)*0.20);
+      frond(p.depth, 88+i*10, -s.HALF_PI);
+      s.pop();
+    }
+  }
+
+  // --- Grass/Bamboo ---
+  function drawGrass(p) {
+    var nS = 5 + Math.floor(s.random(0,5));
+    for(var i=0;i<nS;i++){
+      var sx = (i-(nS-1)/2)*20 + s.random(-5,5);
+      s.push(); s.translate(sx,0);
+      var sh = 60+s.random(0,65);
+      var nodes = 3+Math.floor(s.random(0,3));
+      var cx2 = s.random(-16,16);
+      // Stem as rough bezier segments
+      for(var seg=0;seg<nodes;seg++){
+        var t0=seg/nodes, t1=(seg+1)/nodes;
+        var y0=-sh*t0, y1=-sh*t1;
+        var nx0=cx2*(2*t0*(1-t0))+(cx2*0.4)*t0*t0;
+        var nx1=cx2*(2*t1*(1-t1))+(cx2*0.4)*t1*t1;
+        rLine(nx0,y0,nx1,y1, p.trunkCol, 1.4+s.random(0,0.4), 0.8);
+        // Node ring
+        rc.ellipse(nx1,y1,4,2.5,{stroke:p.trunkCol,strokeWidth:1,roughness:0.8,fill:'none'});
+        // Leaf at node
+        s.push(); s.translate(nx1,y1);
+        var ld = seg%2===0?1:-1;
+        s.rotate(-s.HALF_PI + ld*0.42);
+        var lsz = p.leafSize;
+        rEllipse(0,-lsz*0.5,lsz*0.22,lsz*0.5,p.leafCol+'77',p.leafCol+'55',0.5,1.6);
+        s.pop();
+      }
+      s.pop();
+    }
+  }
+
+  // --- Willow ---
+  function drawWillow(p) {
+    var th = 75+s.random(-10,10);
+    rLine(0,0,0,-th, p.trunkCol, 4, 1.0);
+    s.push(); s.translate(0,-th);
+    var nb = 6+Math.floor(s.random(0,5));
+    for(var b=0;b<nb;b++){
+      var ba = s.random(-0.7,0.7);
+      var bl = 28+s.random(0,28);
+      var bx = Math.cos(-s.HALF_PI+ba)*bl;
+      var by = Math.sin(-s.HALF_PI+ba)*bl;
+      rLine(0,0,bx,by, p.trunkCol, 1.2, 1.0);
+      // Drooping strands from branch end
+      s.push(); s.translate(bx,by);
+      var ns = 2+Math.floor(s.random(0,4));
+      for(var st=0;st<ns;st++){
+        var sx2 = s.random(-10,10);
+        var dl = 20+s.random(0,30);
+        // Hand-draw drooping strand as 3-point polyline
+        rc.linearPath([
+          [sx2,0],
+          [sx2+s.random(-8,8),dl*0.5],
+          [sx2+s.random(-6,6),dl]
+        ], {stroke:p.leafCol+'aa',strokeWidth:0.7,roughness:2.0});
+      }
+      s.pop();
+    }
+    s.pop();
+  }
+
+  // --- Cactus ---
+  function drawCactus(p) {
+    function arm(h, w, depth2) {
+      if(depth2<=0) return;
+      // Body
+      rc.rectangle(-w/2,-h,w,h,{
+        fill:p.leafCol+'55',stroke:p.trunkCol,strokeWidth:0.8,
+        fillStyle:'solid',roughness:1.4
+      });
+      // Spine lines
+      for(var sp=0;sp<4;sp++){
+        var sy = -h*(0.15+sp*0.22);
+        rLine(-w/2,sy,-w/2-5,sy-3,p.trunkCol+'88',0.5,0.8);
+        rLine(w/2,sy,w/2+5,sy-3,p.trunkCol+'88',0.5,0.8);
+      }
+      if(depth2>1&&s.random()>.45){
+        s.push();s.translate(-w/2,-h*0.55);s.rotate(-s.HALF_PI);arm(h*0.58,w*0.72,depth2-1);s.pop();
+      }
+      if(depth2>1&&s.random()>.45){
+        s.push();s.translate(w/2,-h*0.55);s.rotate(s.HALF_PI);arm(h*0.58,w*0.72,depth2-1);s.pop();
       }
     }
-    ctx.restore();
+    arm(85,20,p.depth);
   }
-  branch(p.depth,75,-Math.PI/2);
-}
 
-function drawPlant(p, commonName, sciName) {
-  drawBackground();
-  ctx.save();
-  ctx.translate(W/2, H-36);
-  if      (p.form==='grass')  drawGrass(p);
-  else if (p.form==='fern')   drawFern(p);
-  else if (p.form==='pine')   drawPine(p);
-  else if (p.form==='willow') drawWillow(p);
-  else if (p.form==='cactus') drawCactus(p);
-  else if (p.form==='flower') drawFlower(p);
-  else                        drawTree(p,p.depth);
-  ctx.restore();
-  drawAnnotation(commonName || '', sciName || '');
+  // --- Flower ---
+  function drawFlower(p) {
+    function branch(depth2,len,angle) {
+      if(depth2<=0||len<5) return;
+      var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
+      rLine(0,0,x2,y2, p.trunkCol, Math.max(0.5,depth2*0.65), 1.2);
+      s.push(); s.translate(x2,y2);
+      if(depth2===1){
+        // Petals
+        var petals = 5+Math.floor(s.random(0,4));
+        for(var pe=0;pe<petals;pe++){
+          var pa2 = (pe/petals)*s.TWO_PI;
+          var psz = p.leafSize;
+          s.push(); s.rotate(pa2);
+          rEllipse(0,-psz,psz*0.35,psz, p.leafCol+'88', p.leafCol+'66', 0.6, 1.8);
+          s.pop();
+        }
+        // Center
+        rEllipse(0,0,p.leafSize*0.4,p.leafSize*0.4,'#f8e040aa','#e8c030',0.8,1.2);
+      } else {
+        var aRad=s.radians(p.angle);
+        for(var b=0;b<p.branches;b++){
+          var ba=angle+(b-(p.branches-1)/2)*aRad+s.random(-0.1,0.1);
+          branch(depth2-1,len*p.ratio*s.random(0.85,1.12),ba);
+        }
+      }
+      s.pop();
+    }
+    branch(p.depth,72,-s.HALF_PI);
+  }
+
+  s.redrawPlant = function(prof, common, sci) {
+    currentProfile = prof;
+    currentCommon = common;
+    currentSci = sci;
+    drawScene();
+  };
+};
+
+pInst = new p5(sketch);
+
+// ---- iNaturalist API ----
+function fetchPlant(name, cb) {
+  var url = 'https://api.inaturalist.org/v1/taxa'
+    + '?q=' + encodeURIComponent(name)
+    + '&taxon_id=47126&rank=species,genus,family&per_page=3&order_by=observations_count';
+  fetch(url)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      cb(null, d.results&&d.results.length>0 ? d.results[0] : null);
+    })
+    .catch(function(){ cb(null,null); });
 }
 
 // ---- Generate ----
+var busy = false;
 function generate(name) {
-  if (generating) return;
-  generating = true;
-  document.getElementById('btn-generate').disabled = true;
-  document.getElementById('status').textContent = 'Searching ' + name + '…';
-  document.getElementById('canvas-hint').style.display = 'none';
-  document.getElementById('plant-meta').style.display = 'none';
+  if(busy) return;
+  busy=true;
+  document.getElementById('gbtn').disabled=true;
+  document.getElementById('status').textContent='Generating…';
 
+  var prof = plantProfile(name);
+  // Draw immediately with local profile
+  pInst.redrawPlant(prof, name, '');
+  document.getElementById('pname').textContent=name;
+  document.getElementById('psci').textContent='';
+  document.getElementById('ptags').innerHTML='';
+  document.getElementById('meta-row').style.display='flex';
+  document.getElementById('status').textContent='';
+
+  // Then enrich with API in background
   fetchPlant(name, function(err, taxon) {
-    generating = false;
-    document.getElementById('btn-generate').disabled = false;
-    if (err) { document.getElementById('status').textContent = 'Error: ' + err; return; }
-
-    var p = plantProfile(taxon);
-    var common = taxon.preferred_common_name || taxon.name || name;
-    var sci = taxon.name || '';
-
-    document.getElementById('plant-common').textContent = common;
-    document.getElementById('plant-sci').textContent = sci;
-    var tagsEl = document.getElementById('plant-tags');
-    tagsEl.innerHTML = '';
-    p.tags.forEach(function(t){
-      var sp=document.createElement('span'); sp.className='plant-tag'; sp.textContent=t;
-      tagsEl.appendChild(sp);
-    });
-    document.getElementById('plant-meta').style.display = 'flex';
-    document.getElementById('status').textContent = '';
-
-    drawPlant(p, common, sci);
+    busy=false;
+    document.getElementById('gbtn').disabled=false;
+    if(taxon) {
+      var common = taxon.preferred_common_name || taxon.name || name;
+      var sci = taxon.name||'';
+      document.getElementById('pname').textContent=common;
+      document.getElementById('psci').textContent=sci;
+      var tagsEl=document.getElementById('ptags');
+      tagsEl.innerHTML='';
+      [taxon.iconic_taxon_name, taxon.rank].filter(Boolean).forEach(function(t){
+        var sp=document.createElement('span');sp.className='ptag';sp.textContent=t;tagsEl.appendChild(sp);
+      });
+      // Re-draw with updated labels
+      pInst.redrawPlant(prof, common, sci);
+    }
   });
 }
 
-// ---- UI bindings ----
-document.getElementById('btn-generate').addEventListener('click', function(){
-  var v=document.getElementById('search-input').value.trim(); if(v) generate(v);
+// ---- UI ----
+document.getElementById('gbtn').addEventListener('click',function(){
+  var v=document.getElementById('sinput').value.trim();if(v)generate(v);
 });
-document.getElementById('search-input').addEventListener('keydown', function(e){
-  if(e.key==='Enter'){ var v=this.value.trim(); if(v) generate(v); }
+document.getElementById('sinput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){var v=this.value.trim();if(v)generate(v);}
 });
-document.querySelectorAll('.ex-btn').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.getElementById('search-input').value=this.dataset.plant;
-    generate(this.dataset.plant);
+document.querySelectorAll('.exbtn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.getElementById('sinput').value=this.dataset.p;
+    generate(this.dataset.p);
   });
 });
-
+document.getElementById('btn-regen').addEventListener('click',function(){
+  var v=document.getElementById('sinput').value.trim()||'bamboo';generate(v);
+});
 function doExport(){
-  var a=document.createElement('a');
-  a.href=canvas.toDataURL('image/png');
-  a.download='plantit.png'; a.click();
+  var cnv=document.querySelector('#p5-canvas-wrap canvas');
+  if(!cnv)return;
+  var a=document.createElement('a');a.href=cnv.toDataURL('image/png');
+  a.download='plantit.png';a.click();
 }
-document.getElementById('btn-export').addEventListener('click', doExport);
-document.getElementById('btn-export-hdr').addEventListener('click', doExport);
-
-document.getElementById('btn-about').addEventListener('click', function(){
+document.getElementById('btn-export').addEventListener('click',doExport);
+document.getElementById('expbtn').addEventListener('click',doExport);
+document.getElementById('btn-about').addEventListener('click',function(){
   document.getElementById('about-modal').classList.add('open');
 });
-document.getElementById('about-close').addEventListener('click', function(){
+document.getElementById('mclose').addEventListener('click',function(){
   document.getElementById('about-modal').classList.remove('open');
 });
-document.getElementById('about-modal').addEventListener('click', function(e){
-  if(e.target===this) this.classList.remove('open');
-});
+document.getElementById('about-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
-// Auto-generate on load — skip API, draw directly from name heuristic
-var starters=['bamboo','cherry blossom','fern','pine','lotus','ginkgo','cactus','willow'];
-var startName = starters[Math.floor(Math.random()*starters.length)];
-document.getElementById('search-input').value = startName;
-// Use local profile immediately (no API call on first load)
-(function(){
-  var fakeTaxon = {name: startName, preferred_common_name: startName, rank:'species', iconic_taxon_name:'Plantae'};
-  var p = plantProfile(fakeTaxon);
-  drawPlant(p, startName, '');
-  document.getElementById('canvas-hint').style.display='none';
-  document.getElementById('plant-common').textContent = startName;
-  document.getElementById('plant-sci').textContent = '';
-  document.getElementById('plant-tags').innerHTML = '';
-  document.getElementById('plant-meta').style.display='flex';
-  document.getElementById('status').textContent = 'Click Generate to fetch real species data';
-})();
+// Initial draw
+var starters=['bamboo','cherry blossom','fern','pine','willow','lotus','ginkgo','sunflower'];
+var s0=starters[Math.floor(Math.random()*starters.length)];
+document.getElementById('sinput').value=s0;
+// Wait for p5 setup then draw
+setTimeout(function(){generate(s0);},200);
 </script>
 </body>
 </html>
