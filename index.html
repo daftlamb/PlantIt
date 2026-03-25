@@ -410,7 +410,7 @@ var sketch = function(s) {
 
   s.draw = function() {
     if (windActive && !smokeActive) {
-      windT += 0.008;
+      windT += 0.0008;
       drawScene(currentBg);
     }
   };
@@ -690,11 +690,8 @@ function fetchPlant(name, cb) {
 }
 
 function generate(name) {
-  if (busy) return;
   var q = translateZh(name.trim());
-  busy = true;
-  document.getElementById('btn-generate').disabled = true;
-  document.getElementById('status-bar').textContent = 'Generating\u2026';
+  // Draw immediately — no wait
   var prof = plantProfile(q);
   applyProfileToSliders(prof);
   Object.assign(currentProfile, prof);
@@ -702,10 +699,9 @@ function generate(name) {
   currentSci = '';
   pInst.redrawPlant(currentProfile, q, '', currentBg);
   updateFrameOverlay();
-  document.getElementById('status-bar').textContent = 'Fetching species data\u2026';
+  document.getElementById('status-bar').textContent = '';
+  // Fetch species data silently in background
   fetchPlant(q, function(err, taxon) {
-    busy = false;
-    document.getElementById('btn-generate').disabled = false;
     if (taxon) {
       var common = taxon.preferred_common_name || taxon.name || q;
       var sci = taxon.name || '';
@@ -713,9 +709,7 @@ function generate(name) {
       currentSci = sci;
       pInst.redrawPlant(currentProfile, common, sci, currentBg);
       updateFrameOverlay();
-      document.getElementById('status-bar').textContent = sci ? sci : '';
-    } else {
-      document.getElementById('status-bar').textContent = '';
+      document.getElementById('status-bar').textContent = sci;
     }
   });
 }
