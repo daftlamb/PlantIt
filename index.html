@@ -182,11 +182,11 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
       </div>
       <div class="section-title" style="margin-top:8px">Background</div>
       <div class="bg-presets">
-        <div class="bg-chip active" data-bg="#fdfaf4" style="background:#fdfaf4" title="Paper"></div>
-        <div class="bg-chip" data-bg="#f5f0e8" style="background:#f5f0e8" title="Cream"></div>
-        <div class="bg-chip" data-bg="#2a2e35" style="background:#2a2e35" title="Slate"></div>
-        <div class="bg-chip" data-bg="#1a1a2e" style="background:#1a1a2e" title="Ink"></div>
-        <input type="color" id="col-bg" value="#fdfaf4" title="Custom background" />
+        <div class="bg-chip active" data-bg="#f5efe0" style="background:#f5efe0" title="Parchment"></div>
+        <div class="bg-chip" data-bg="#e8ede4" style="background:#e8ede4" title="Sage"></div>
+        <div class="bg-chip" data-bg="#faf6ee" style="background:#faf6ee" title="Ivory"></div>
+        <div class="bg-chip" data-bg="#2a2e35" style="background:#2a2e35" title="Dusk"></div>
+        <input type="color" id="col-bg" value="#f5efe0" title="Custom background" />
       </div>
       <div class="toggle-row" style="margin-top:8px">
         <span class="toggle-label">Dark Mode</span>
@@ -327,7 +327,7 @@ function translateZh(q) {
 var currentProfile = {form:'tree',depth:5,angle:28,ratio:0.70,branches:2,trunkCol:'#6b4c2a',leafCol:'#4a7a38',leafSize:7,name:'bamboo'};
 var currentCommon = 'bamboo';
 var currentSci = '';
-var currentBg = '#fdfaf4';
+var currentBg = '#f5efe0';
 var currentFrame = 'none';
 var currentRoughness = 1.4;
 var bgCtx = null;
@@ -457,48 +457,131 @@ var sketch = function(s) {
   }
 
   function drawScene(bgColor) {
-    bgColor = bgColor || '#fdfaf4';
+    bgColor = bgColor || '#f5efe0';
     if (!bgCtx || !plantCtx) return;
 
-    // --- BG canvas: background, grid, ground line, annotations ---
+    // --- BG canvas: botanical specimen plate ---
     bgCtx.clearRect(0, 0, W, H);
+
+    // 1. Paper texture base
     bgCtx.fillStyle = bgColor;
     bgCtx.fillRect(0, 0, W, H);
-    // Grid
-    bgCtx.strokeStyle = 'rgba(120,110,95,0.07)';
-    bgCtx.lineWidth = 0.5;
-    for (var gx = 0; gx < W; gx += 32) { bgCtx.beginPath(); bgCtx.moveTo(gx,0); bgCtx.lineTo(gx,H); bgCtx.stroke(); }
-    for (var gy = 0; gy < H; gy += 32) { bgCtx.beginPath(); bgCtx.moveTo(0,gy); bgCtx.lineTo(W,gy); bgCtx.stroke(); }
-    // Ground line
-    bgCtx.strokeStyle = 'rgba(100,80,50,0.15)';
+
+    // Paper grain: 800 tiny random dots (seeded positions via fixed loop)
+    // Use a simple LCG for deterministic grain that doesn't shift on redraw
+    var grainSeed = 42;
+    function grainRand() { grainSeed = (grainSeed * 1664525 + 1013904223) & 0xffffffff; return (grainSeed >>> 0) / 4294967296; }
+    for (var gi = 0; gi < 800; gi++) {
+      var gx2 = grainRand() * W;
+      var gy2 = grainRand() * H;
+      var gr = 0.3 + grainRand() * 0.5;
+      var go = 0.03 + grainRand() * 0.05;
+      bgCtx.beginPath();
+      bgCtx.arc(gx2, gy2, gr, 0, Math.PI * 2);
+      bgCtx.fillStyle = 'rgba(138,122,90,' + go.toFixed(3) + ')';
+      bgCtx.fill();
+    }
+
+    // 2. Faint ruled lines (18-22 horizontal)
+    var nLines = 20;
+    bgCtx.strokeStyle = 'rgba(154,138,106,0.06)';
     bgCtx.lineWidth = 1;
-    bgCtx.beginPath(); bgCtx.moveTo(20,H-38); bgCtx.lineTo(W-20,H-38); bgCtx.stroke();
-    // Annotations
-    bgCtx.font = '300 10px Outfit,sans-serif';
-    bgCtx.fillStyle = 'rgba(100,88,68,0.7)';
+    for (var li2 = 0; li2 < nLines; li2++) {
+      var ly2 = (li2 + 1) * H / (nLines + 1);
+      bgCtx.beginPath();
+      bgCtx.moveTo(0, ly2);
+      bgCtx.lineTo(W, ly2);
+      bgCtx.stroke();
+    }
+
+    // 3. Corner ornaments: thin L-shaped brackets inset 12px
+    bgCtx.strokeStyle = 'rgba(100,80,50,0.25)';
+    bgCtx.lineWidth = 1;
+    var ci = 12; // inset
+    var ca = 20; // arm length
+    // Top-left
+    bgCtx.beginPath(); bgCtx.moveTo(ci + ca, ci); bgCtx.lineTo(ci, ci); bgCtx.lineTo(ci, ci + ca); bgCtx.stroke();
+    // Top-right
+    bgCtx.beginPath(); bgCtx.moveTo(W - ci - ca, ci); bgCtx.lineTo(W - ci, ci); bgCtx.lineTo(W - ci, ci + ca); bgCtx.stroke();
+    // Bottom-left
+    bgCtx.beginPath(); bgCtx.moveTo(ci + ca, H - ci); bgCtx.lineTo(ci, H - ci); bgCtx.lineTo(ci, H - ci - ca); bgCtx.stroke();
+    // Bottom-right
+    bgCtx.beginPath(); bgCtx.moveTo(W - ci - ca, H - ci); bgCtx.lineTo(W - ci, H - ci); bgCtx.lineTo(W - ci, H - ci - ca); bgCtx.stroke();
+
+    // 4. Bottom annotation strip (bottom 52px)
+    // Horizontal rule at H-52
+    bgCtx.strokeStyle = 'rgba(100,80,50,0.2)';
+    bgCtx.lineWidth = 1;
+    bgCtx.beginPath(); bgCtx.moveTo(0, H - 52); bgCtx.lineTo(W, H - 52); bgCtx.stroke();
+
+    // Specimen number: seeded per plant name
+    var spSeed = 0;
+    var spName = currentCommon || 'plant';
+    for (var si = 0; si < spName.length; si++) { spSeed = (spSeed * 31 + spName.charCodeAt(si)) & 0xffff; }
+    var spNum = String(100 + (spSeed % 900)).padStart(3, '0');
+
+    // Large italic common name (left)
+    bgCtx.font = "italic 500 18px 'Outfit',sans-serif";
+    bgCtx.fillStyle = 'rgba(60,45,25,0.75)';
     bgCtx.textAlign = 'left';
-    bgCtx.fillText(currentCommon, 16, H-18);
-    bgCtx.font = 'italic 300 9px Outfit,sans-serif';
-    bgCtx.fillStyle = 'rgba(100,88,68,0.45)';
-    bgCtx.fillText(currentSci, 16, H-8);
+    bgCtx.fillText(currentCommon || '', 20, H - 32);
+
+    // Scientific name below (left)
+    bgCtx.font = "italic 300 11px 'Outfit',sans-serif";
+    bgCtx.fillStyle = 'rgba(80,65,40,0.5)';
+    bgCtx.textAlign = 'left';
+    bgCtx.fillText(currentSci || '', 22, H - 16);
+
+    // Specimen number (right)
+    bgCtx.font = "300 10px 'Outfit',sans-serif";
+    bgCtx.fillStyle = 'rgba(100,80,50,0.4)';
     bgCtx.textAlign = 'right';
-    bgCtx.font = '300 9px Outfit,sans-serif';
-    bgCtx.fillStyle = 'rgba(100,88,68,0.35)';
-    bgCtx.fillText('Plant It', W-16, H-14);
+    bgCtx.fillText('Sp. ' + spNum, W - 20, H - 32);
+
+    // Current date (right, below)
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var now = new Date();
+    var dateStr = months[now.getMonth()] + ' ' + now.getFullYear();
+    bgCtx.font = "300 9px 'Outfit',sans-serif";
+    bgCtx.fillStyle = 'rgba(100,80,50,0.3)';
+    bgCtx.textAlign = 'right';
+    bgCtx.fillText(dateStr, W - 20, H - 16);
+
+    // 5. Watermark: faint "PLANTIT" at center, 45 deg
+    bgCtx.save();
+    bgCtx.translate(W / 2, H / 2);
+    bgCtx.rotate(-Math.PI / 4);
+    bgCtx.font = "700 48px 'Outfit',sans-serif";
+    bgCtx.fillStyle = 'rgba(150,130,100,0.04)';
+    bgCtx.textAlign = 'center';
+    bgCtx.textBaseline = 'middle';
+    bgCtx.fillText('PLANTIT', 0, 0);
+    bgCtx.restore();
+    bgCtx.textBaseline = 'alphabetic';
 
     // --- Plant canvas: only the plant, transparent bg ---
     plantCtx.clearRect(0, 0, W, H);
     var p = currentProfile;
     plantCtx.save();
-    plantCtx.translate(W/2, H-38);
+    // Translate to just above annotation strip
+    plantCtx.translate(W/2, H - 60);
     var trunkLen = parseFloat(document.getElementById('sl-length').value) || 75;
+    // Small plant size fix
+    var scaledTrunkLen = trunkLen;
+    if (p.form === 'tree' || p.form === 'willow') {
+      if (p.depth < 4) scaledTrunkLen = trunkLen * 1.4;
+    } else if (p.form === 'pine') {
+      scaledTrunkLen = trunkLen * 1.2;
+    } else if (p.form === 'cactus') {
+      scaledTrunkLen = trunkLen * 1.3;
+    }
     if (p.form === 'grass') drawGrass(p);
     else if (p.form === 'fern') drawFern(p);
     else if (p.form === 'pine') drawPine(p);
     else if (p.form === 'willow') drawWillow(p);
     else if (p.form === 'cactus') drawCactus(p);
     else if (p.form === 'flower') drawFlower(p);
-    else drawTree(p, p.depth, trunkLen, -s.HALF_PI);
+    else drawTree(p, p.depth, scaledTrunkLen, -s.HALF_PI);
     plantCtx.restore();
   }
 
@@ -1125,31 +1208,79 @@ function bakeFrame(sourceCanvas, common, sci, frameStyle, frameColor) {
   var W = sourceCanvas.width;
   var H = sourceCanvas.height;
   if (frameStyle === 'polaroid') {
-    oc.width = W + 40;
-    oc.height = H + 80;
+    // White bg, padding top 20px, sides 24px, bottom 80px
+    oc.width = W + 48;
+    oc.height = H + 100;
     var ctx = oc.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, oc.width, oc.height);
-    ctx.drawImage(sourceCanvas, 20, 20);
+    ctx.drawImage(sourceCanvas, 24, 20);
+    // Bottom strip: common name and sci name centered
+    ctx.textAlign = 'center';
+    ctx.font = "italic 400 16px 'Outfit',sans-serif";
+    ctx.fillStyle = '#333333';
+    ctx.fillText(common || '', oc.width / 2, H + 20 + 30);
+    if (sci) {
+      ctx.font = "300 10px 'Outfit',sans-serif";
+      ctx.fillStyle = '#888888';
+      ctx.fillText(sci, oc.width / 2, H + 20 + 46);
+    }
+    // Hairline border
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, oc.width - 1, oc.height - 1);
   } else if (frameStyle === 'border') {
     oc.width = W;
     oc.height = H;
     var ctx = oc.getContext('2d');
     ctx.drawImage(sourceCanvas, 0, 0);
-    ctx.strokeStyle = frameColor || '#000000';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(3, 3, W-6, H-6);
+    var fc = frameColor || '#6b4c2a';
+    // Outer border 2px
+    ctx.strokeStyle = fc;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, W - 2, H - 2);
+    // Inner border 1px at 8px inset
+    ctx.lineWidth = 1;
+    ctx.strokeRect(8, 8, W - 16, H - 16);
+    // Corner dots at inner border intersections
+    ctx.fillStyle = fc;
+    [[8,8],[W-8,8],[8,H-8],[W-8,H-8]].forEach(function(pt) {
+      ctx.beginPath();
+      ctx.arc(pt[0], pt[1], 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
   } else if (frameStyle === 'label') {
     oc.width = W;
-    oc.height = H + 40;
+    oc.height = H + 56;
     var ctx = oc.getContext('2d');
     ctx.drawImage(sourceCanvas, 0, 0);
-    ctx.fillStyle = frameColor || '#2a2e35';
-    ctx.fillRect(0, H, W, 40);
+    var fc = frameColor || '#2a2e35';
+    // Bottom strip 56px
+    ctx.fillStyle = fc;
+    ctx.fillRect(0, H, W, 56);
+    // Thin top edge on strip
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, H + 0.5);
+    ctx.lineTo(W, H + 0.5);
+    ctx.stroke();
+    // Left: common name italic white 14px
+    ctx.textAlign = 'left';
+    ctx.font = "italic 400 14px 'Outfit',sans-serif";
     ctx.fillStyle = '#ffffff';
-    ctx.font = '13px Outfit, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText((common || '') + (sci ? '  ' + sci : ''), W/2, H+26);
+    ctx.fillText(common || '', 16, H + 24);
+    // Left: sci name below 9px rgba(255,255,255,0.65)
+    if (sci) {
+      ctx.font = "300 9px 'Outfit',sans-serif";
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillText(sci, 16, H + 40);
+    }
+    // Right: "Plant It" white 9px
+    ctx.textAlign = 'right';
+    ctx.font = "300 9px 'Outfit',sans-serif";
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Plant It', W - 16, H + 24);
   } else {
     oc.width = W;
     oc.height = H;
