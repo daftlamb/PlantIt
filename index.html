@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Plant It — Generative Botany</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f2eb;
+  --surface:#edeade;
+  --border:#d8d2c0;
+  --text:#2a2418;
+  --muted:#9a8e7a;
+  --accent:#4a7c59;
+  --accent2:#6a9e78;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;
+  font-weight:300;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+header{
+  height:48px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;
+  border-bottom:1px solid var(--border);
+  background:rgba(245,242,235,.9);
+  backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:10;
+}
+.brand{font-size:15px;font-weight:500}
+.brand span{color:var(--accent)}
+
+#main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:40px 24px;
+  gap:32px;
+}
+
+.search-wrap{
+  width:100%;max-width:480px;
+  display:flex;gap:8px;
+}
+.search-input{
+  flex:1;
+  background:white;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 16px;
+  font-family:inherit;
+  font-size:14px;
+  color:var(--text);
+  outline:none;
+  transition:border-color .15s;
+}
+.search-input:focus{border-color:var(--accent)}
+.btn-search{
+  background:var(--accent);
+  border:none;
+  border-radius:10px;
+  color:white;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:500;
+  padding:10px 20px;
+  cursor:pointer;
+  transition:background .15s;
+}
+.btn-search:hover{background:var(--accent2)}
+
+#plant-info{
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  text-align:center;
+}
+.plant-name{font-size:20px;font-weight:400;letter-spacing:.02em}
+.plant-sci{font-size:12px;color:var(--muted);font-style:italic}
+.plant-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.plant-tag{
+  font-size:10px;color:var(--accent);
+  border:1px solid var(--accent);
+  border-radius:20px;
+  padding:2px 10px;
+  letter-spacing:.04em;
+}
+
+#canvas-wrap{
+  position:relative;
+  width:480px;max-width:100%;
+}
+#plant-canvas{
+  display:block;
+  width:100%;
+  border-radius:12px;
+  background:white;
+  box-shadow:0 4px 24px rgba(0,0,0,.06);
+}
+.btn-export{
+  margin-top:12px;
+  background:none;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--muted);
+  font-family:inherit;
+  font-size:12px;
+  padding:8px 20px;
+  cursor:pointer;
+  transition:all .15s;
+  display:block;
+  margin-left:auto;margin-right:auto;
+}
+.btn-export:hover{border-color:var(--accent);color:var(--accent)}
+
+#status{
+  font-size:12px;color:var(--muted);
+  min-height:20px;text-align:center;
+  letter-spacing:.04em;
+}
+
+.examples{
+  display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+}
+.ex-btn{
+  background:none;
+  border:1px solid var(--border);
+  border-radius:20px;
+  color:var(--muted);
+  font-family:inherit;
+  font-size:11px;
+  padding:5px 14px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.ex-btn:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Plant<span>It</span></div>
+  <span style="font-size:11px;color:var(--muted)">Generative Botany</span>
+</header>
+
+<div id="main">
+  <div class="search-wrap">
+    <input class="search-input" id="search-input" type="text" placeholder="Enter a plant name… e.g. bamboo, cherry, fern" />
+    <button class="btn-search" id="btn-search">Generate</button>
+  </div>
+
+  <div class="examples">
+    <button class="ex-btn" data-plant="bamboo">bamboo</button>
+    <button class="ex-btn" data-plant="cherry blossom">cherry blossom</button>
+    <button class="ex-btn" data-plant="fern">fern</button>
+    <button class="ex-btn" data-plant="sunflower">sunflower</button>
+    <button class="ex-btn" data-plant="moss">moss</button>
+    <button class="ex-btn" data-plant="lotus">lotus</button>
+    <button class="ex-btn" data-plant="pine">pine</button>
+    <button class="ex-btn" data-plant="willow">willow</button>
+  </div>
+
+  <div id="status">Search a plant to generate its portrait.</div>
+
+  <div id="plant-info">
+    <div class="plant-name" id="plant-common"></div>
+    <div class="plant-sci" id="plant-sci"></div>
+    <div class="plant-tags" id="plant-tags"></div>
+  </div>
+
+  <div id="canvas-wrap" style="display:none">
+    <canvas id="plant-canvas" width="480" height="480"></canvas>
+    <button class="btn-export" id="btn-export">↓ Export PNG</button>
+  </div>
+</div>
+
+<script>
+var canvas = document.getElementById('plant-canvas');
+var ctx = canvas.getContext('2d');
+var W = canvas.width, H = canvas.height;
+
+// ---- iNaturalist API fetch ----
+function fetchPlant(name, cb) {
+  var url = 'https://api.inaturalist.org/v1/taxa?q=' + encodeURIComponent(name)
+    + '&rank=species,genus&per_page=1&order_by=observations_count';
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data.results && data.results.length > 0) cb(null, data.results[0]);
+      else cb('No results found');
+    })
+    .catch(function(e){ cb(e.toString()); });
+}
+
+// ---- Plant profile → growth parameters ----
+function plantProfile(taxon) {
+  var name = (taxon.name || '').toLowerCase();
+  var common = (taxon.preferred_common_name || taxon.name || '').toLowerCase();
+  var tags = [];
+  if (taxon.iconic_taxon_name) tags.push(taxon.iconic_taxon_name);
+  if (taxon.rank) tags.push(taxon.rank);
+
+  // Derive growth params from taxonomy / common name heuristics
+  var p = {
+    // L-system string length (complexity)
+    depth: 5,
+    // Branching angle
+    angle: 25,
+    // Branch length ratio child/parent
+    ratio: 0.72,
+    // How many branches per node
+    branches: 2,
+    // Trunk color
+    trunkColor: '#5a4020',
+    // Leaf color
+    leafColor: '#4a8040',
+    // Leaf size
+    leafSize: 6,
+    // Overall form: 'tree'|'fern'|'grass'|'flower'|'vine'
+    form: 'tree',
+    // Tags for display
+    tags: tags,
+  };
+
+  // Bamboo / grass family
+  if (/bamboo|grass|reed|sedge|wheat|corn|poace/.test(name+common)) {
+    p.form='grass'; p.angle=8; p.depth=6; p.ratio=0.88; p.branches=1;
+    p.trunkColor='#6a8040'; p.leafColor='#7aaa50'; p.leafSize=14;
+  }
+  // Fern
+  else if (/fern|pterid|filices/.test(name+common)) {
+    p.form='fern'; p.angle=30; p.depth=5; p.ratio=0.62; p.branches=2;
+    p.trunkColor='#3a5a28'; p.leafColor='#5a9040';
+  }
+  // Cherry / plum / sakura (delicate flowering)
+  else if (/cherry|sakura|plum|prunus|magnol/.test(name+common)) {
+    p.form='flower'; p.angle=38; p.depth=5; p.ratio=0.68; p.branches=3;
+    p.trunkColor='#6a3828'; p.leafColor='#e8a0b0'; p.leafSize=5;
+  }
+  // Pine / conifer
+  else if (/pine|fir|spruce|cedar|conifer|picea|abies|pinus/.test(name+common)) {
+    p.form='tree'; p.angle=22; p.depth=6; p.ratio=0.75; p.branches=2;
+    p.trunkColor='#4a3820'; p.leafColor='#2a5828'; p.leafSize=4;
+  }
+  // Willow
+  else if (/willow|salix/.test(name+common)) {
+    p.form='vine'; p.angle=45; p.depth=5; p.ratio=0.78; p.branches=2;
+    p.trunkColor='#5a4818'; p.leafColor='#88aa40'; p.leafSize=10;
+  }
+  // Lotus / water lily / aquatic
+  else if (/lotus|lily|nelumbo|nymphae/.test(name+common)) {
+    p.form='flower'; p.angle=50; p.depth=3; p.ratio=0.80; p.branches=5;
+    p.trunkColor='#3a6838'; p.leafColor='#e8c860'; p.leafSize=12;
+  }
+  // Sunflower / daisy
+  else if (/sunflower|daisy|helianthus|asteraceae/.test(name+common)) {
+    p.form='flower'; p.angle=55; p.depth=3; p.ratio=0.65; p.branches=4;
+    p.trunkColor='#6a5020'; p.leafColor='#e8c030'; p.leafSize=10;
+  }
+  // Moss / lichen
+  else if (/moss|lichen|bryophyt/.test(name+common)) {
+    p.form='fern'; p.angle=60; p.depth=4; p.ratio=0.55; p.branches=3;
+    p.trunkColor='#4a5a28'; p.leafColor='#6a8038'; p.leafSize=3;
+  }
+  // Default tree
+  else {
+    p.form='tree'; p.angle=28; p.depth=5; p.ratio=0.70; p.branches=2;
+  }
+
+  // Tiny random variation so every generation is slightly unique
+  p.angle += (Math.random()-0.5) * 8;
+  p.ratio += (Math.random()-0.5) * 0.06;
+  return p;
+}
+
+// ---- Recursive plant drawing ----
+function drawPlant(p) {
+  ctx.clearRect(0,0,W,H);
+
+  // Background — soft paper texture
+  var bgGrad = ctx.createLinearGradient(0,0,0,H);
+  bgGrad.addColorStop(0,'#fdfaf4');
+  bgGrad.addColorStop(1,'#f0ece0');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0,0,W,H);
+
+  // Subtle grid lines (like graph paper)
+  ctx.strokeStyle = 'rgba(180,170,150,.12)';
+  ctx.lineWidth = 0.5;
+  for(var gx=0;gx<W;gx+=32){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for(var gy=0;gy<H;gy+=32){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+  // Ground line
+  ctx.strokeStyle = 'rgba(120,100,70,.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();ctx.moveTo(0,H-40);ctx.lineTo(W,H-40);ctx.stroke();
+
+  // Draw the plant
+  ctx.save();
+  ctx.translate(W/2, H-40);
+
+  if (p.form === 'grass') {
+    drawGrass(p);
+  } else if (p.form === 'fern') {
+    drawFern(p);
+  } else {
+    drawTree(p, p.depth);
+  }
+
+  ctx.restore();
+
+  // Botanical annotation
+  ctx.font = '300 10px Outfit,sans-serif';
+  ctx.fillStyle = 'rgba(100,90,70,.5)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Plant It · plantitapp.com', W-16, H-16);
+}
+
+// Tree / shrub recursive
+function drawTree(p, depth, len, angle) {
+  if (depth === undefined) { len = 80; angle = -Math.PI/2; }
+  if (depth <= 0 || len < 2) return;
+
+  var x2 = Math.cos(angle) * len;
+  var y2 = Math.sin(angle) * len;
+
+  ctx.save();
+  ctx.strokeStyle = depth <= 2 ? p.leafColor : p.trunkColor;
+  ctx.lineWidth = Math.max(0.5, depth * 0.8);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+
+  ctx.translate(x2,y2);
+  var angleRad = p.angle * Math.PI/180;
+
+  // Draw leaf at tips
+  if (depth <= 2) {
+    drawLeaf(ctx, p.leafColor, p.leafSize, angle);
+  }
+
+  // Recurse — main branch + side branches
+  for (var b=0; b<p.branches; b++) {
+    var branchAngle = angle + (b - (p.branches-1)/2) * angleRad + (Math.random()-0.5)*0.15;
+    drawTree(p, depth-1, len*p.ratio*(0.9+Math.random()*0.2), branchAngle);
+  }
+  ctx.restore();
+}
+
+// Fern frond (bilateral)
+function drawFern(p) {
+  function frond(depth, len, angle) {
+    if (depth <= 0 || len < 1.5) return;
+    var x2=Math.cos(angle)*len, y2=Math.sin(angle)*len;
+    ctx.strokeStyle = depth<=1 ? p.leafColor : p.trunkColor;
+    ctx.lineWidth = Math.max(0.5, depth*0.5);
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(x2,y2);ctx.stroke();
+    ctx.save();ctx.translate(x2,y2);
+    // Main continuation
+    frond(depth-1, len*0.88, angle+(Math.random()-0.5)*0.1);
+    // Bilateral pinnae
+    var pLen = len*0.45;
+    var pAngle = p.angle*Math.PI/180;
+    if(depth>1){
+      frond(depth-2, pLen, angle+pAngle);
+      frond(depth-2, pLen, angle-pAngle);
+    } else {
+      drawLeaf(ctx, p.leafColor, p.leafSize, angle+pAngle);
+      drawLeaf(ctx, p.leafColor, p.leafSize, angle-pAngle);
+    }
+    ctx.restore();
+  }
+  for(var i=0;i<3;i++){
+    ctx.save();
+    ctx.rotate((i-1)*0.25);
+    frond(p.depth, 90+i*10, -Math.PI/2);
+    ctx.restore();
+  }
+}
+
+// Grass / bamboo — multiple vertical stems with nodes
+function drawGrass(p) {
+  var nStems = 5 + Math.floor(Math.random()*4);
+  for(var s=0;s<nStems;s++){
+    var sx = (s-(nStems-1)/2)*18 + (Math.random()-0.5)*8;
+    ctx.save();ctx.translate(sx,0);
+    var stemH = 60 + Math.random()*60;
+    var nodes = 3 + Math.floor(Math.random()*3);
+    // Stem
+    ctx.strokeStyle = p.trunkColor;
+    ctx.lineWidth = 1.5+Math.random();
+    ctx.lineCap='round';
+    ctx.beginPath();
+    // Slight curve using quadratic
+    ctx.moveTo(0,0);
+    var ctrlX = (Math.random()-0.5)*20;
+    ctx.quadraticCurveTo(ctrlX,-stemH*0.5,ctrlX*0.3+sx*0.1,-stemH);
+    ctx.stroke();
+    // Nodes and leaves
+    for(var n=1;n<=nodes;n++){
+      var t=n/nodes;
+      var nx=ctrlX*t*2*(1-t)+ctrlX*0.3*t*t;
+      var ny=-stemH*t;
+      // Node dot
+      ctx.beginPath();ctx.arc(nx,ny,1.5,0,Math.PI*2);
+      ctx.fillStyle=p.trunkColor;ctx.fill();
+      // Leaf
+      ctx.save();ctx.translate(nx,ny);
+      var lDir = n%2===0?1:-1;
+      drawLeaf(ctx,p.leafColor,p.leafSize*1.5,-Math.PI/2+lDir*0.5);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+
+function drawLeaf(ctx, color, size, angle) {
+  ctx.save();
+  ctx.rotate(angle+Math.PI/2);
+  ctx.beginPath();
+  ctx.fillStyle = color+'cc';
+  ctx.ellipse(0, -size/2, size/4, size/2, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ---- Search + generate ----
+function generate(name) {
+  document.getElementById('status').textContent = 'Searching ' + name + '…';
+  document.getElementById('plant-info').style.display = 'none';
+  document.getElementById('canvas-wrap').style.display = 'none';
+
+  fetchPlant(name, function(err, taxon) {
+    if (err) {
+      document.getElementById('status').textContent = err;
+      return;
+    }
+    var p = plantProfile(taxon);
+    var common = taxon.preferred_common_name || taxon.name;
+    var sci = taxon.name;
+
+    document.getElementById('plant-common').textContent = common;
+    document.getElementById('plant-sci').textContent = sci;
+    var tagsEl = document.getElementById('plant-tags');
+    tagsEl.innerHTML = '';
+    p.tags.forEach(function(t){
+      var span=document.createElement('span');
+      span.className='plant-tag';
+      span.textContent=t;
+      tagsEl.appendChild(span);
+    });
+    document.getElementById('plant-info').style.display='flex';
+    document.getElementById('canvas-wrap').style.display='block';
+    document.getElementById('status').textContent='';
+
+    drawPlant(p);
+  });
+}
+
+document.getElementById('btn-search').addEventListener('click', function(){
+  var v = document.getElementById('search-input').value.trim();
+  if(v) generate(v);
+});
+document.getElementById('search-input').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ var v=this.value.trim(); if(v) generate(v); }
+});
+document.querySelectorAll('.ex-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.getElementById('search-input').value = this.dataset.plant;
+    generate(this.dataset.plant);
+  });
+});
+
+document.getElementById('btn-export').addEventListener('click', function(){
+  var a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='plantit.png';
+  a.click();
+});
+
+// Start with a random example
+var starters = ['bamboo','cherry blossom','fern','pine'];
+generate(starters[Math.floor(Math.random()*starters.length)]);
+</script>
+</body>
+</html>
