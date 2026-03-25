@@ -675,6 +675,17 @@ var sketch = function(s) {
 
 pInst = new p5(sketch);
 
+// Wait for p5 setup (rc initialized) before first generate
+function waitAndGenerate(name, tries) {
+  tries = tries || 0;
+  if (tries > 40) return;
+  if (pInst && typeof pInst.redrawPlant === 'function') {
+    generate(name);
+  } else {
+    setTimeout(function() { waitAndGenerate(name, tries + 1); }, 100);
+  }
+}
+
 
 // iNaturalist API
 function fetchPlant(name, cb) {
@@ -690,8 +701,11 @@ function fetchPlant(name, cb) {
 }
 
 function generate(name) {
+  if (!pInst || typeof pInst.redrawPlant !== 'function') {
+    setTimeout(function() { generate(name); }, 100);
+    return;
+  }
   var q = translateZh(name.trim());
-  // Draw immediately — no wait
   var prof = plantProfile(q);
   applyProfileToSliders(prof);
   Object.assign(currentProfile, prof);
@@ -700,7 +714,6 @@ function generate(name) {
   pInst.redrawPlant(currentProfile, q, '', currentBg);
   updateFrameOverlay();
   document.getElementById('status-bar').textContent = '';
-  // Fetch species data silently in background
   fetchPlant(q, function(err, taxon) {
     if (taxon) {
       var common = taxon.preferred_common_name || taxon.name || q;
@@ -1087,7 +1100,7 @@ document.getElementById('btn-gen-personality').addEventListener('click', functio
 var starters = ['bamboo','cherry blossom','fern','pine','willow','lotus','ginkgo','sunflower'];
 var s0 = starters[Math.floor(Math.random()*starters.length)];
 document.getElementById('search-input').value = s0;
-setTimeout(function() { generate(s0); }, 200);
+waitAndGenerate(s0);
 </script>
 </body>
 </html>
