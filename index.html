@@ -54,7 +54,7 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
 .bg-presets{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
 .bg-chip{width:22px;height:22px;border-radius:4px;border:2px solid transparent;cursor:pointer;transition:border-color .15s;flex-shrink:0}
 .bg-chip.active,.bg-chip:hover{border-color:var(--accent)}
-.toggle-row{display:flex;align-items:center;gap:8px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .toggle-label{font-size:11px;color:var(--muted);flex:1}
 .toggle-switch{position:relative;width:34px;height:18px;flex-shrink:0}
 .toggle-switch input{opacity:0;width:0;height:0;position:absolute}
@@ -72,7 +72,17 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
 #canvas-wrap canvas{display:block}
 #caption-layer{position:absolute;inset:0;pointer-events:none;z-index:20}
 .caption-item{position:absolute;cursor:move;pointer-events:all;user-select:none;white-space:pre;line-height:1.2}
+#frame-overlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:10;display:none}
+#frame-label-overlay{position:absolute;left:0;right:0;bottom:0;pointer-events:none;z-index:15;display:none;flex-direction:column;align-items:center;justify-content:center;height:44px;background:rgba(42,46,53,0.92);color:#fff;font-family:'Outfit','Noto Sans SC',sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-align:center;padding:0 8px}
 #mobile-handle{display:none}
+.personality-q{margin-bottom:10px}
+.personality-q-text{font-size:11px;color:var(--text);margin-bottom:5px}
+.personality-ab{display:flex;gap:4px}
+.personality-ab .btn{flex:1;font-size:10px;padding:4px 2px;text-align:center}
+.personality-result{margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:8px;display:none}
+.personality-result.visible{display:block}
+.personality-result-name{font-size:14px;font-weight:500;text-transform:capitalize;margin-bottom:4px;color:var(--accent)}
+.personality-result-desc{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5}
 @media(max-width:700px){
   #app{flex-direction:column;overflow:visible}
   #panel{position:fixed;bottom:0;left:0;right:0;width:100%;height:72px;border-right:none;border-top:1px solid var(--border);overflow:hidden;z-index:40;transition:height .25s ease;border-radius:14px 14px 0 0;box-shadow:0 -2px 20px rgba(0,0,0,.12)}
@@ -174,6 +184,23 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
           <div class="toggle-knob"></div>
         </label>
       </div>
+      <div class="toggle-row" style="margin-top:6px">
+        <span class="toggle-label">Wind Animation</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-wind" checked />
+          <div class="toggle-track"></div>
+          <div class="toggle-knob"></div>
+        </label>
+      </div>
+      <div class="toggle-row" style="margin-top:6px">
+        <span class="toggle-label">Line Style: Sketch</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-linestyle" />
+          <div class="toggle-track"></div>
+          <div class="toggle-knob"></div>
+        </label>
+        <span id="linestyle-label" style="font-size:10px;color:var(--muted);margin-left:4px">Clean</span>
+      </div>
     </div>
 
     <div class="panel-section">
@@ -204,6 +231,42 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
       </div>
     </div>
 
+    <div class="panel-section">
+      <div class="section-title">Personality</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">What plant are you?</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Answer 3 questions to find your plant</div>
+
+      <div class="personality-q">
+        <div class="personality-q-text">Your energy?</div>
+        <div class="personality-ab">
+          <button class="btn" id="q1a" data-q="1" data-v="A">Quiet &amp; still</button>
+          <button class="btn" id="q1b" data-q="1" data-v="B">Wild &amp; flowing</button>
+        </div>
+      </div>
+      <div class="personality-q">
+        <div class="personality-q-text">Your roots?</div>
+        <div class="personality-ab">
+          <button class="btn" id="q2a" data-q="2" data-v="A">Deep &amp; grounded</button>
+          <button class="btn" id="q2b" data-q="2" data-v="B">Light &amp; floating</button>
+        </div>
+      </div>
+      <div class="personality-q">
+        <div class="personality-q-text">Your season?</div>
+        <div class="personality-ab">
+          <button class="btn" id="q3a" data-q="3" data-v="A">Spring blossom</button>
+          <button class="btn" id="q3b" data-q="3" data-v="B">Year-round green</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-find-plant" style="margin-top:4px">Find My Plant</button>
+
+      <div class="personality-result" id="personality-result">
+        <div class="personality-result-name" id="p-result-name"></div>
+        <div class="personality-result-desc" id="p-result-desc"></div>
+        <button class="btn-primary" id="btn-gen-personality" style="font-size:12px;padding:6px 10px">Generate this plant</button>
+      </div>
+    </div>
+
     <div id="export-section">
       <button class="btn" id="btn-redraw" style="width:100%">&#8635; Redraw</button>
       <button class="btn-primary" id="btn-export">&#8595; Export PNG</button>
@@ -212,6 +275,8 @@ input[type=color]{width:32px;height:24px;border:1px solid var(--border);border-r
 
   <div id="canvas-area">
     <div id="canvas-wrap">
+      <div id="frame-overlay"></div>
+      <div id="frame-label-overlay"></div>
       <div id="caption-layer"></div>
     </div>
   </div>
@@ -257,6 +322,10 @@ var pInst = null;
 var captions = [];
 var captionIdCounter = 0;
 var busy = false;
+var windActive = true;
+var lineMode = 'sketch';
+var windT = 0;
+var smokeActive = false;
 
 function plantProfile(name) {
   var n = name.toLowerCase();
@@ -325,7 +394,7 @@ var sketch = function(s) {
     var cl = document.getElementById('caption-layer');
     document.getElementById('canvas-wrap').appendChild(cl);
     rc = rough.canvas(cnv.elt);
-    s.noLoop();
+    s.frameRate(30);
     drawScene(currentBg);
   };
 
@@ -337,6 +406,13 @@ var sketch = function(s) {
     s.resizeCanvas(W, H);
     rc = rough.canvas(s.canvas);
     drawScene(currentBg);
+  };
+
+  s.draw = function() {
+    if (windActive && !smokeActive) {
+      windT += 0.008;
+      drawScene(currentBg);
+    }
   };
 
   function hexToRgb(hex) {
@@ -381,16 +457,36 @@ var sketch = function(s) {
     s.text('Plant It', W-16, H-14);
   }
 
-  function rLine(x1,y1,x2,y2,col,wt,rough2) {
-    rc.line(x1,y1,x2,y2,{stroke:col,strokeWidth:wt||1,roughness:rough2!==undefined?rough2:currentRoughness});
+  function calcWindOffset(depth) {
+    if (!windActive || smokeActive || depth <= 0) return 0;
+    var windStrength = 3;
+    return Math.sin(windT + depth * 0.5) * windStrength * (1 / depth);
   }
+
+  function rLine(x1,y1,x2,y2,col,wt,rough2) {
+    if (lineMode === 'clean') {
+      var ctx = s.canvas.getContext('2d');
+      ctx.save();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = wt || 1;
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      rc.line(x1,y1,x2,y2,{stroke:col,strokeWidth:wt||1,roughness:rough2!==undefined?rough2:currentRoughness});
+    }
+  }
+
   function rEllipse(x,y,rw,rh,fill,stroke2,wt,rough2) {
     rc.ellipse(x,y,rw*2,rh*2,{fill:fill||'transparent',stroke:stroke2||fill||'transparent',strokeWidth:wt||0.8,fillStyle:'solid',roughness:rough2!==undefined?rough2:currentRoughness,fillWeight:0.5});
   }
 
   function drawTree(p, depth, len, angle) {
     if (depth <= 0 || len < 3) return;
-    var x2 = Math.cos(angle)*len;
+    var windOff = calcWindOffset(depth);
+    var x2 = Math.cos(angle)*len + windOff;
     var y2 = Math.sin(angle)*len;
     var col = depth <= 2 ? p.leafCol+'99' : p.trunkCol;
     var wt = Math.max(0.5, depth*0.9);
@@ -423,8 +519,9 @@ var sketch = function(s) {
       var tw = (70*(1-frac*0.65)) * (1+s.random(-0.06,0.06));
       var th = 22+frac*8;
       var yo = -th*0.45*t;
+      var windOff = calcWindOffset(Math.max(1, tiers - t));
       rc.polygon([
-        [0, yo-th], [tw/2+s.random(-3,3), yo], [-tw/2+s.random(-3,3), yo]
+        [windOff, yo-th], [tw/2+s.random(-3,3)+windOff, yo], [-tw/2+s.random(-3,3)+windOff, yo]
       ], {fill:p.leafCol+'55',stroke:p.leafCol,strokeWidth:0.7,fillStyle:'hachure',hachureAngle:55,hachureGap:4,roughness:currentRoughness});
     }
     s.pop();
@@ -433,7 +530,8 @@ var sketch = function(s) {
   function drawFern(p) {
     function frond(depth, len, angle) {
       if (depth <= 0 || len < 2) return;
-      var x2 = Math.cos(angle)*len;
+      var windOff = calcWindOffset(depth);
+      var x2 = Math.cos(angle)*len + windOff;
       var y2 = Math.sin(angle)*len;
       rLine(0,0,x2,y2, depth<=1?p.leafCol:p.trunkCol, Math.max(0.4,depth*0.45), currentRoughness);
       s.push(); s.translate(x2,y2);
@@ -468,8 +566,9 @@ var sketch = function(s) {
         var t1 = (seg+1)/nodes;
         var y0 = -sh*t0;
         var y1 = -sh*t1;
-        var nx0 = cx2*(2*t0*(1-t0))+(cx2*0.4)*t0*t0;
-        var nx1 = cx2*(2*t1*(1-t1))+(cx2*0.4)*t1*t1;
+        var windOff = calcWindOffset(Math.max(1, nodes - seg));
+        var nx0 = cx2*(2*t0*(1-t0))+(cx2*0.4)*t0*t0 + windOff;
+        var nx1 = cx2*(2*t1*(1-t1))+(cx2*0.4)*t1*t1 + windOff;
         rLine(nx0,y0,nx1,y1, p.trunkCol, 1.4+s.random(0,0.4), currentRoughness*0.6);
         rc.ellipse(nx1,y1,4,2.5,{stroke:p.trunkCol,strokeWidth:1,roughness:0.8,fill:'none'});
         s.push(); s.translate(nx1,y1);
@@ -485,19 +584,21 @@ var sketch = function(s) {
 
   function drawWillow(p) {
     var th = 75+s.random(-10,10);
-    rLine(0,0,0,-th, p.trunkCol, 4, currentRoughness*0.7);
-    s.push(); s.translate(0,-th);
+    var trunkWind = calcWindOffset(1) * 0.3;
+    rLine(0,0,trunkWind,-th, p.trunkCol, 4, currentRoughness*0.7);
+    s.push(); s.translate(trunkWind,-th);
     var nb = 6+Math.floor(s.random(0,5));
     for (var b = 0; b < nb; b++) {
       var ba = s.random(-0.7,0.7);
       var bl = 28+s.random(0,28);
-      var bx = Math.cos(-s.HALF_PI+ba)*bl;
+      var windOff = calcWindOffset(2);
+      var bx = Math.cos(-s.HALF_PI+ba)*bl + windOff;
       var by = Math.sin(-s.HALF_PI+ba)*bl;
       rLine(0,0,bx,by, p.trunkCol, 1.2, currentRoughness*0.7);
       s.push(); s.translate(bx,by);
       var ns = 2+Math.floor(s.random(0,4));
       for (var st = 0; st < ns; st++) {
-        var sx2 = s.random(-10,10);
+        var sx2 = s.random(-10,10) + calcWindOffset(3);
         var dl = 20+s.random(0,30);
         rc.linearPath([
           [sx2,0],[sx2+s.random(-8,8),dl*0.5],[sx2+s.random(-6,6),dl]
@@ -530,7 +631,8 @@ var sketch = function(s) {
   function drawFlower(p) {
     function branch(depth2, len, angle) {
       if (depth2 <= 0 || len < 5) return;
-      var x2 = Math.cos(angle)*len;
+      var windOff = calcWindOffset(depth2);
+      var x2 = Math.cos(angle)*len + windOff;
       var y2 = Math.sin(angle)*len;
       rLine(0,0,x2,y2, p.trunkCol, Math.max(0.5,depth2*0.65), currentRoughness);
       s.push(); s.translate(x2,y2);
@@ -565,6 +667,10 @@ var sketch = function(s) {
     if (bgColor) currentBg = bgColor;
     drawScene(currentBg);
   };
+
+  s.forceRedraw = function() {
+    drawScene(currentBg);
+  };
 };
 
 pInst = new p5(sketch);
@@ -595,6 +701,7 @@ function generate(name) {
   currentCommon = q;
   currentSci = '';
   pInst.redrawPlant(currentProfile, q, '', currentBg);
+  updateFrameOverlay();
   document.getElementById('status-bar').textContent = 'Fetching species data\u2026';
   fetchPlant(q, function(err, taxon) {
     busy = false;
@@ -605,11 +712,47 @@ function generate(name) {
       currentCommon = common;
       currentSci = sci;
       pInst.redrawPlant(currentProfile, common, sci, currentBg);
+      updateFrameOverlay();
       document.getElementById('status-bar').textContent = sci ? sci : '';
     } else {
       document.getElementById('status-bar').textContent = '';
     }
   });
+}
+
+// Frame overlay preview
+function updateFrameOverlay() {
+  var overlay = document.getElementById('frame-overlay');
+  var labelOverlay = document.getElementById('frame-label-overlay');
+  var frameColor = document.getElementById('col-frame').value;
+  var wrap = document.getElementById('canvas-wrap');
+
+  // Reset
+  overlay.style.display = 'none';
+  overlay.style.boxShadow = '';
+  overlay.style.background = '';
+  overlay.style.border = '';
+  labelOverlay.style.display = 'none';
+  labelOverlay.innerHTML = '';
+  wrap.style.background = '';
+  wrap.style.padding = '';
+
+  if (currentFrame === 'polaroid') {
+    overlay.style.display = 'block';
+    overlay.style.boxShadow = 'inset 20px 20px 0 #fff, inset -20px 20px 0 #fff, inset 0 -60px 0 #fff, inset 20px -60px 0 #fff, inset -20px -60px 0 #fff';
+    overlay.style.background = 'transparent';
+  } else if (currentFrame === 'border') {
+    overlay.style.display = 'block';
+    overlay.style.boxShadow = 'inset 0 0 0 4px ' + frameColor;
+    overlay.style.background = 'transparent';
+  } else if (currentFrame === 'label') {
+    labelOverlay.style.display = 'flex';
+    var nameText = currentCommon || 'Plant';
+    var sciText = currentSci ? '\u2014 ' + currentSci : '';
+    labelOverlay.innerHTML = '<span style="color:#fff;font-size:12px;font-weight:400">' + nameText + '</span>' +
+      (currentSci ? '<span style="color:rgba(255,255,255,0.65);font-size:10px;font-style:italic">' + currentSci + '</span>' : '');
+    labelOverlay.style.background = frameColor !== '#ffffff' ? frameColor : 'rgba(42,46,53,0.92)';
+  }
 }
 
 // Caption system
@@ -628,7 +771,9 @@ function addCaption(x, y) {
   el.style.fontSize = size + 'px';
   el.style.color = color;
   el.style.fontFamily = "'Outfit','Noto Sans SC',sans-serif";
+  el.style.display = 'block';
   var layer = document.getElementById('caption-layer');
+  layer.style.pointerEvents = 'none';
   layer.appendChild(el);
   captions.push({id:id, x:x, y:y, text:text, size:size, color:color});
   makeDraggable(el);
@@ -709,15 +854,12 @@ function doExport() {
   if (!srcCanvas) return;
   var frameColor = document.getElementById('col-frame').value;
   var framed = bakeFrame(srcCanvas, currentCommon, currentSci, currentFrame, frameColor);
-  // Bake captions onto framed canvas
   var final = document.createElement('canvas');
   final.width = framed.width;
   final.height = framed.height;
   var ctx = final.getContext('2d');
   ctx.drawImage(framed, 0, 0);
   var layer = document.getElementById('caption-layer');
-  var layerRect = layer.getBoundingClientRect();
-  var wrapRect = document.getElementById('canvas-wrap').getBoundingClientRect();
   var items = layer.querySelectorAll('.caption-item');
   items.forEach(function(el) {
     var left = parseInt(el.style.left, 10) || 0;
@@ -788,13 +930,31 @@ document.getElementById('btn-dark').addEventListener('click', function() {
   document.documentElement.setAttribute('data-theme', td.checked ? 'dark' : '');
 });
 
+// Wind toggle
+document.getElementById('toggle-wind').addEventListener('change', function() {
+  windActive = this.checked;
+  if (!windActive && pInst && pInst.forceRedraw) pInst.forceRedraw();
+});
+
+// Line style toggle
+document.getElementById('toggle-linestyle').addEventListener('change', function() {
+  lineMode = this.checked ? 'sketch' : 'clean';
+  document.getElementById('linestyle-label').textContent = this.checked ? 'Sketch' : 'Clean';
+  if (pInst && pInst.redrawPlant) pInst.redrawPlant(currentProfile, currentCommon, currentSci, currentBg);
+});
+
 // Frame buttons
 document.querySelectorAll('#frame-group .btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     document.querySelectorAll('#frame-group .btn').forEach(function(b) { b.classList.remove('active'); });
     this.classList.add('active');
     currentFrame = this.dataset.frame;
+    updateFrameOverlay();
   });
+});
+
+document.getElementById('col-frame').addEventListener('input', function() {
+  updateFrameOverlay();
 });
 
 // Generate button
@@ -830,6 +990,7 @@ document.getElementById('btn-export').addEventListener('click', doExport);
 // Click canvas to place caption
 document.getElementById('canvas-wrap').addEventListener('click', function(e) {
   if (e.target.classList.contains('caption-item')) return;
+  if (e.target.closest && e.target.closest('.caption-item')) return;
   var rect = this.getBoundingClientRect();
   var x = e.clientX - rect.left;
   var y = e.clientY - rect.top;
@@ -864,6 +1025,68 @@ mobileHandle.addEventListener('touchend', function() {
     panel.classList.remove('expanded');
     panel.style.height = '';
   }
+});
+
+// Personality plant matcher
+var personalityAnswers = {1: null, 2: null, 3: null};
+
+var personalityMap = {
+  'AAA': 'pine',
+  'AAB': 'bamboo',
+  'ABA': 'cherry blossom',
+  'ABB': 'willow',
+  'BAA': 'fern',
+  'BAB': 'ginkgo',
+  'BBA': 'lotus',
+  'BBB': 'sunflower'
+};
+
+var personalityDesc = {
+  'pine': 'You are steady, patient, and always present — a quiet guardian.',
+  'bamboo': 'You bend but never break — flexible strength runs through you.',
+  'cherry blossom': 'You live fully in the moment, beautiful and fleeting.',
+  'willow': 'You are graceful under pressure, flowing with life\'s currents.',
+  'fern': 'You thrive in the shadows, finding beauty where others don\'t look.',
+  'ginkgo': 'Ancient and resilient — you\'ve survived everything and grown wiser.',
+  'lotus': 'You rise above the mud, turning struggle into something luminous.',
+  'sunflower': 'You follow the light, radiating warmth to everyone around you.'
+};
+
+document.querySelectorAll('.personality-ab .btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var q = this.dataset.q;
+    var v = this.dataset.v;
+    personalityAnswers[q] = v;
+    // Highlight active answer in this question
+    var siblings = this.parentElement.querySelectorAll('.btn');
+    siblings.forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+document.getElementById('btn-find-plant').addEventListener('click', function() {
+  var a1 = personalityAnswers[1];
+  var a2 = personalityAnswers[2];
+  var a3 = personalityAnswers[3];
+  if (!a1 || !a2 || !a3) {
+    // Default to AAA if not all answered
+    a1 = a1 || 'A';
+    a2 = a2 || 'A';
+    a3 = a3 || 'A';
+  }
+  var key = a1 + a2 + a3;
+  var plantName = personalityMap[key] || 'pine';
+  var desc = personalityDesc[plantName] || '';
+  document.getElementById('p-result-name').textContent = plantName;
+  document.getElementById('p-result-desc').textContent = desc;
+  document.getElementById('personality-result').classList.add('visible');
+  document.getElementById('btn-gen-personality').dataset.plant = plantName;
+});
+
+document.getElementById('btn-gen-personality').addEventListener('click', function() {
+  var plantName = this.dataset.plant || 'pine';
+  document.getElementById('search-input').value = plantName;
+  generate(plantName);
 });
 
 // Initial draw
