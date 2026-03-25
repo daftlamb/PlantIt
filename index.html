@@ -410,11 +410,19 @@ var sketch = function(s) {
 
   s.draw = function() {
     if (windActive && !smokeActive) {
+      // Multi-frequency wind — slow drift + occasional gust
       windT += 0.0008;
       drawScene(currentBg);
     }
   };
 
+  // Wind easing: multi-sine blend for organic feel
+  // Returns smooth [-1..1] with varying rhythm, no sharp reversals
+  function windWave(t) {
+    return Math.sin(t) * 0.5
+         + Math.sin(t * 0.37 + 1.2) * 0.3
+         + Math.sin(t * 0.13 + 2.5) * 0.2;
+  }
   function hexToRgb(hex) {
     return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
   }
@@ -459,11 +467,28 @@ var sketch = function(s) {
 
   function calcWindOffset(depth) {
     if (!windActive || smokeActive || depth <= 0) return 0;
-    var windStrength = 3;
-    return Math.sin(windT + depth * 0.5) * windStrength * (1 / depth);
+    var windStrength = 4;
+    // Multi-sine wave for organic, eased sway — tips move more than trunk
+    var wave = windWave(windT + depth * 0.38);
+    return wave * windStrength * (1 / Math.max(1, depth * 0.6));
   }
 
+  // When wind is active, always use clean lines to avoid rough.js per-frame jitter
   function rLine(x1,y1,x2,y2,col,wt,rough2) {
+    if (windActive && !smokeActive) {
+      // Clean smooth line during animation
+      var ctx2 = s.canvas.getContext('2d');
+      ctx2.save();
+      ctx2.strokeStyle = col || '#333';
+      ctx2.lineWidth = wt || 1;
+      ctx2.lineCap = 'round';
+      ctx2.beginPath();
+      ctx2.moveTo(x1,y1);
+      ctx2.lineTo(x2,y2);
+      ctx2.stroke();
+      ctx2.restore();
+      return;
+    }
     if (lineMode === 'clean') {
       var ctx = s.canvas.getContext('2d');
       ctx.save();
@@ -480,6 +505,17 @@ var sketch = function(s) {
   }
 
   function rEllipse(x,y,rw,rh,fill,stroke2,wt,rough2) {
+    if (windActive && !smokeActive) {
+      // Clean ellipse during animation
+      var ctx2 = s.canvas.getContext('2d');
+      ctx2.save();
+      ctx2.beginPath();
+      ctx2.ellipse(x,y,rw,rh,0,0,Math.PI*2);
+      if (fill && fill !== 'transparent') { ctx2.fillStyle=fill; ctx2.fill(); }
+      if (stroke2 && stroke2 !== 'transparent') { ctx2.strokeStyle=stroke2; ctx2.lineWidth=wt||0.8; ctx2.stroke(); }
+      ctx2.restore();
+      return;
+    }
     rc.ellipse(x,y,rw*2,rh*2,{fill:fill||'transparent',stroke:stroke2||fill||'transparent',strokeWidth:wt||0.8,fillStyle:'solid',roughness:rough2!==undefined?rough2:currentRoughness,fillWeight:0.5});
   }
 
